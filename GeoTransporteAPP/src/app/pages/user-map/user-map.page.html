@@ -1,6 +1,18 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>userMap</ion-title>
+    <ion-buttons slot="start">
+      <ion-button routerLink="/inicio">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Rutas</ion-title>
+    <ion-buttons slot="end">
+      <ion-select placeholder="Seleccionar Rutas">
+        <ion-select-option value="option1">Ruta 1</ion-select-option>
+        <ion-select-option value="option2">Ruta 2</ion-select-option>
+        <ion-select-option value="option3">Ruta 3</ion-select-option>
+      </ion-select>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
