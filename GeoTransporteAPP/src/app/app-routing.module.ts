@@ -44,11 +44,19 @@ const routes: Routes = [
     loadChildren: () => import('./pages/admin-edit-rute/admin-edit-rute.module').then( m => m.AdminEditRutePageModule)
   },
   {
+    path: 'admin-edit-rute/:id',
+    loadChildren: () => import('./pages/admin-edit-rute/admin-edit-rute.module').then( m => m.AdminEditRutePageModule)
+  },
+  {
     path: 'admin-vehicle',
     loadChildren: () => import('./pages/admin-vehicle/admin-vehicle.module').then( m => m.AdminVehiclePageModule)
   },
   {
     path: 'admin-edit-vehicle',
+    loadChildren: () => import('./pages/admin-edit-vehicle/admin-edit-vehicle.module').then( m => m.AdminEditVehiclePageModule)
+  },
+  {
+    path: 'admin-edit-vehicle/:id',
     loadChildren: () => import('./pages/admin-edit-vehicle/admin-edit-vehicle.module').then( m => m.AdminEditVehiclePageModule)
   }
 ];
