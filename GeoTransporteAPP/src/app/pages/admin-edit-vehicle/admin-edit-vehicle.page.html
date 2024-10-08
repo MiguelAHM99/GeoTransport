@@ -1,13 +1,38 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>adminEditVehicle</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ vehiculoId ? 'Editar Vehículo' : 'Agregar Vehículo' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">adminEditVehicle</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-card>
+    <ion-item>
+      <ion-label position="floating">Nombre</ion-label>
+      <ion-input [(ngModel)]="newvehiculo.nombre" required maxlength="12"></ion-input>
+    </ion-item>
+    <ion-text *ngIf="!newvehiculo.nombre && cargando" color="danger">
+      El nombre es obligatorio.
+    </ion-text>
+    <ion-text *ngIf="newvehiculo.nombre?.length > 12" color="danger">
+      El nombre no puede tener más de 12 caracteres.
+    </ion-text>
+
+    <ion-item>
+      <ion-label position="floating">Patente</ion-label>
+      <ion-input [(ngModel)]="newvehiculo.patente" (ionInput)="formatPatente()" required maxlength="9"></ion-input>
+    </ion-item>
+    <ion-text *ngIf="!newvehiculo.patente && cargando" color="danger">
+      La patente es obligatoria.
+    </ion-text>
+    <ion-text *ngIf="!isPatenteValid()" color="danger">
+      La patente debe tener el formato XX-XX-XX.
+    </ion-text>
+  </ion-card>
+
+  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid() || cargando">
+    Guardar
+  </ion-button>
 </ion-content>

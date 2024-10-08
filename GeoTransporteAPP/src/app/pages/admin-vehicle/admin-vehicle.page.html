@@ -3,60 +3,44 @@
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
-    <ion-title>Vehiculos</ion-title>
+    <ion-title>Vehículos</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Vehiculos</ion-title>
+      <ion-title size="large">Vehículos</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <ion-card>
+  <div class="table-container">
+    <ion-button class="add-button" shape="round" routerLink="/admin-edit-vehicle">
+      Agregar Nuevo Vehículo
+    </ion-button>
 
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input [(ngModel)]="newvehiculo.nombre" required maxlength="12"></ion-input>
-    </ion-item>
-    <ion-text *ngIf="!newvehiculo.nombre && cargando" color="danger">
-      El nombre es obligatorio.
+    <table class="vehiculos-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Patente</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vehiculo of vehiculos">
+          <td>{{vehiculo.nombre}}</td>
+          <td>{{vehiculo.patente}}</td>
+          <td>
+            <ion-button color="warning" (click)="edit(vehiculo)">Editar</ion-button>
+            <ion-button color="danger" (click)="delete(vehiculo)">Eliminar</ion-button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ion-text *ngIf="vehiculos.length === 0" color="medium" class="no-vehiculos">
+      <p>No hay vehículos disponibles.</p>
     </ion-text>
-    <ion-text *ngIf="newvehiculo.nombre?.length > 12" color="danger">
-      El nombre no puede tener más de 12 caracteres.
-    </ion-text>
-   
-    <ion-item>
-      <ion-label position="floating">Patente</ion-label>
-      <!-- Aquí llamamos a la función para formatear la patente -->
-      <ion-input [(ngModel)]="newvehiculo.patente" (ionInput)="formatPatente()" required maxlength="9"></ion-input>
-    </ion-item>
-    <!-- Mensaje de validación para la patente -->
-    <ion-text *ngIf="!newvehiculo.patente && cargando" color="danger">
-      La patente es obligatoria.
-    </ion-text>
-    <ion-text *ngIf="!isPatenteValid()" color="danger">
-      La patente debe tener el formato XX-XX-XX.
-    </ion-text>
-
-  </ion-card>
-
-  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid()">
-    Guardar
-  </ion-button>
-
-  <ion-list>
-    <ion-item *ngFor="let vehiculo of vehiculos">
-      <ion-label>
-        Nombre: {{vehiculo.nombre}} <br>
-        Patente: {{vehiculo.patente}}
-      </ion-label>
-      <ion-buttons slot="end">
-        <ion-button (click)="edit(vehiculo)">Editar</ion-button>
-        <ion-button (click)="delete(vehiculo)">Eliminar</ion-button>
-      </ion-buttons>
-    </ion-item>
-  </ion-list>
-
+  </div>
 </ion-content>
