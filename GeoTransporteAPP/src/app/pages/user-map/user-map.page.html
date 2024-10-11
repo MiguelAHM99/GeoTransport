@@ -21,4 +21,9 @@
       <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.nombre">{{ ruta.nombre }}</ion-select-option>
     </ion-select>
   </div>
+
+  <ion-button (click)="printCurrentPosition()">Obtener Posición Actual</ion-button>
+  <p>{{ currentPosition }}</p>
+
+
 </ion-content>
