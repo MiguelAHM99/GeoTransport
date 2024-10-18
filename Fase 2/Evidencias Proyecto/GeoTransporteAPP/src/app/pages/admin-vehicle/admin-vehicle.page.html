@@ -14,33 +14,24 @@
     </ion-toolbar>
   </ion-header>
 
-  <div class="table-container">
     <ion-button class="add-button" shape="round" routerLink="/admin-edit-vehicle">
       Agregar Nuevo Vehículo
     </ion-button>
 
-    <table class="vehiculos-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Patente</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let vehiculo of vehiculos">
-          <td>{{vehiculo.nombre}}</td>
-          <td>{{vehiculo.patente}}</td>
-          <td>
-            <ion-button color="warning" (click)="edit(vehiculo)">Editar</ion-button>
-            <ion-button color="danger" (click)="delete(vehiculo)">Eliminar</ion-button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <ion-card>    
+      <ion-item *ngFor="let vehiculo of vehiculos">
+            <ion-label>
+              Nombre: {{vehiculo.nombre}} <br>
+              Patente: {{vehiculo.patente}} 
+            </ion-label>
+            <ion-buttons>
+              <ion-button (click)="edit(vehiculo)" color="warning">Editar</ion-button>
+              <ion-button (click)="delete(vehiculo)" color="danger">Eliminar</ion-button>
+            </ion-buttons>
+        </ion-item>
+      </ion-card>
 
     <ion-text *ngIf="vehiculos.length === 0" color="medium" class="no-vehiculos">
       <p>No hay vehículos disponibles.</p>
     </ion-text>
-  </div>
 </ion-content>

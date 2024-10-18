@@ -36,20 +36,21 @@
     Guardar
   </ion-button>
 
-  <ion-list>
-    <ion-item *ngFor="let conductor of conductores">
+<ion-card>    
+<ion-item *ngFor="let conductor of conductores">
       <ion-label>
         Correo: {{conductor.correo}} <br>
         Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
         <ng-template #hiddenPassword>********</ng-template>
       </ion-label>
       <ion-buttons slot="end">
-        <ion-button (click)="togglePasswordVisibility(conductor.id)">
-          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
+        <ion-button (click)="togglePasswordVisibility(conductor.id)" >
+          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'" ></ion-icon>
         </ion-button>
-        <ion-button (click)="edit(conductor)">Editar</ion-button>
-        <ion-button (click)="delete(conductor)">Eliminar</ion-button>
+        <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
+        <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
       </ion-buttons>
-    </ion-item>
-  </ion-list>
-</ion-content>
+   </ion-item>
+ </ion-card>
+ 
+ </ion-content>
