@@ -1,19 +1,26 @@
-import { Component, OnInit } from '@angular/core';
-import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
+// src/app/pages/login/login.page.ts
+
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
 })
-export class LoginPage implements OnInit {
+export class LoginPage {
   correo: string;
   contrasenna: string;
 
-  constructor(private firestore: Firestore, private router: Router) { }
+  constructor(
+    private firestore: Firestore,
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
-  ngOnInit() { }
+  ngOnInit() {}
 
   async onLogin() {
     try {
@@ -41,19 +48,20 @@ export class LoginPage implements OnInit {
         return;
       }
 
+      // Iniciar sesión con el servicio de autenticación
+      await this.authService.login(this.correo, this.contrasenna);
+
       console.log('Usuario autenticado:', userData);
 
-      // Verificar el campo socio y redirigir al usuario
+      // Redirigir según el rol del usuario
       if (userData['socio']) {
-        console.log('Usuario es socio, redirigiendo a /admin-driver');
         this.router.navigate(['/admin-driver']);
       } else {
-        console.log('Usuario no es socio, redirigiendo a /driver-map');
         this.router.navigate(['/driver-map']);
       }
     } catch (error) {
-      console.error('Error en el login:', error);
-      alert('Error en el login: ' + (error as Error).message);
+      console.error('Error al iniciar sesión:', error);
+      alert('Error al iniciar sesión');
     }
   }
 }
