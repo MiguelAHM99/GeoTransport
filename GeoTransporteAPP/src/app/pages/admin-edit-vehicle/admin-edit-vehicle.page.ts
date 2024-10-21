@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { VehiculoI } from 'src/app/common/models/vehiculos.models';
 import { FirestoreService } from 'src/app/common/services/firestore.service';
-import { AlertController } from '@ionic/angular'; 
-import { ActivatedRoute, Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
+import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
 @Component({
   selector: 'app-admin-edit-vehicle',
@@ -11,25 +13,24 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class AdminEditVehiclePage implements OnInit {
 
-  vehiculo: VehiculoI;
-  cargando: boolean = false;
-
-  newvehiculo: VehiculoI = {
-    nombre: '',
-    patente: '',
-    id: '',
-    // Asegúrate de tener las propiedades necesarias
-  };
   vehiculoId: string;
+  newVehiculo: VehiculoI;
+  cargando: boolean = false;
+  selectedServicio: string;
 
   constructor(
+    private route: ActivatedRoute,
+    private router: Router,
     private firestoreService: FirestoreService,
     private alertController: AlertController,
-    private router: Router,
-    private route: ActivatedRoute
-  ) { }
+    private firestore: Firestore,
+    private selectedServiceService: SelectedServiceService
+  ) {
+    this.initVehiculo();
+  }
 
   ngOnInit() {
+    this.selectedServicio = this.selectedServiceService.getSelectedService();
     // Obtener el ID del vehículo desde la URL
     this.vehiculoId = this.route.snapshot.paramMap.get('id');
     if (this.vehiculoId) {
@@ -37,25 +38,31 @@ export class AdminEditVehiclePage implements OnInit {
     }
   }
 
- // Cargar los datos del vehículo desde Firestore
- loadVehicleData() {
-  this.cargando = true;
-  this.firestoreService.getDocument<VehiculoI>('Vehiculos', this.vehiculoId)
-    .then(doc => {
-      if (doc.exists()) {
-        this.newvehiculo = doc.data(); // Cargar los datos del vehículo en el formulario
-      } else {
-        this.showAlert('Error', 'Vehículo no encontrado.');
-        this.router.navigate(['/admin-vehicle']); // Redirigir si no se encuentra el vehículo
-      }
-      this.cargando = false;
-    })
-    .catch(err => {
-      console.error('Error al obtener el vehículo:', err);
-      this.showAlert('Error', 'Error al cargar los datos del vehículo.');
-      this.cargando = false;
-    });
-}
+  // Inicializar un nuevo vehículo
+  initVehiculo() {
+    this.newVehiculo = {
+      nombre: '',
+      patente: '',
+      id: ''
+    };
+  }
+
+  // Cargar los datos del vehículo desde Firestore
+  async loadVehicleData() {
+    if (!this.selectedServicio || !this.vehiculoId) return;
+
+    this.cargando = true;
+    const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos/${this.vehiculoId}`);
+    const docSnap = await getDoc(vehiculoDocRef);
+
+    if (docSnap.exists()) {
+      this.newVehiculo = docSnap.data() as VehiculoI; // Cargar los datos del vehículo en el formulario
+    } else {
+      this.showAlert('Error', 'Vehículo no encontrado.');
+      this.router.navigate(['/admin-vehicle']); // Redirigir si no se encuentra el vehículo
+    }
+    this.cargando = false;
+  }
 
   // Mostrar un alert de error
   async showAlert(header: string, message: string) {
@@ -67,35 +74,30 @@ export class AdminEditVehiclePage implements OnInit {
     await alert.present();
   }
 
+  // Guardar los cambios del vehículo en Firestore
+  async save() {
+    if (!this.validateInputs()) return; // Si la validación falla, detener el guardado.
+    this.cargando = true;
+    if (this.vehiculoId) {
+      await this.firestoreService.updateDocument(this.newVehiculo, `Servicios/${this.selectedServicio}/vehiculos`, this.vehiculoId);
+    } else {
+      this.newVehiculo.id = this.firestoreService.createIdDoc();
+      await this.firestoreService.createDocument(this.newVehiculo, `Servicios/${this.selectedServicio}/vehiculos`, this.newVehiculo.id);
+    }
+    this.cargando = false;
+    this.router.navigate(['/admin-vehicle']); // Redirigir a la lista de vehículos después de guardar
+  }
+
   // Validar campos antes de guardar o editar
   validateInputs(): boolean {
-    if (!this.newvehiculo.nombre || !this.newvehiculo.patente) {
+    if (!this.newVehiculo.nombre || !this.newVehiculo.patente) {
       this.showAlert('Error', 'Por favor completa todos los campos');
       return false;
     }
     return true;
   }
-    
- // Guardar o editar el vehículo en Firestore
- async save() {
-  if (!this.validateInputs()) return; // Validar campos
-
-  this.cargando = true;
-  if (this.vehiculoId) {
-    await this.firestoreService.updateDocument(this.newvehiculo, 'Vehiculos', this.vehiculoId);
-  } else {
-    this.newvehiculo.id = this.firestoreService.createIdDoc();
-    await this.firestoreService.createDocument(this.newvehiculo, 'Vehiculos', this.newvehiculo.id);
-  }
-
-  this.router.navigate(['/admin-vehicle']); // Redirigir después de guardar
-  this.cargando = false;
-}
-
-
-  // Función para formatear la patente mientras el usuario escribe
   formatPatente() {
-    let patente = this.newvehiculo.patente || '';
+    let patente = this.newVehiculo.patente || '';
     patente = patente.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Solo letras mayúsculas y números
     if (patente.length > 6) {
       patente = patente.slice(0, 5); // Limitar a 6 caracteres
@@ -103,17 +105,17 @@ export class AdminEditVehiclePage implements OnInit {
 
     // Formato XX-XX-XX
     const formattedPatente = patente.match(/.{1,2}/g)?.join('-') || patente;
-    this.newvehiculo.patente = formattedPatente;
+    this.newVehiculo.patente = formattedPatente;
   }
 
   // Validar si la patente tiene el formato correcto
   isPatenteValid(): boolean {
     const regex = /^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/;
-    return regex.test(this.newvehiculo.patente || '');
+    return regex.test(this.newVehiculo.patente || '');
   }
 
   // Validar si el formulario es válido
   isFormValid(): boolean {
-    return this.newvehiculo.nombre?.length <= 12 && this.isPatenteValid();
+    return this.newVehiculo.nombre?.length <= 12 && this.isPatenteValid();
   }
 }

@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ConductorI } from 'src/app/common/models/conductores.models';
 import { FirestoreService } from 'src/app/common/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, query, where, getDocs, doc, getDoc, collectionGroup } from '@angular/fire/firestore';
+import { Auth, onAuthStateChanged } from '@angular/fire/auth';
+import { UsuarioI } from 'src/app/common/models/usuario.model';
 
 @Component({
   selector: 'app-admin-driver',
@@ -15,25 +17,54 @@ export class AdminDriverPage implements OnInit {
   newConductor: ConductorI;
   cargando: boolean = false;
   conductor: ConductorI;
+  socioId: string | null = null;
   showPassword: { [key: string]: boolean } = {}; // Controlar visibilidad de contraseñas
 
   constructor(
     private firestoreService: FirestoreService,
     private alertController: AlertController,
-    private firestore: Firestore
+    private firestore: Firestore,
+    private auth: Auth
   ) {
-    this.loadConductores();
     this.initConductor();
   }
 
-  ngOnInit() { }
+  ngOnInit() {
+    onAuthStateChanged(this.auth, async (user) => {
+      if (user) {
+        const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UsuarioI;
+          if (userData.socio) {
+            this.socioId = user.uid;
+            this.loadConductores();
+          } else {
+            this.socioId = null;
+          }
+        } else {
+          this.socioId = null;
+        }
+      } else {
+        this.socioId = null;
+      }
+    });
+  }
 
   // Cargar la colección completa de conductores
   async loadConductores() {
+    if (!this.socioId) return;
+
+    const conductoresRef = collection(this.firestore, `usuarios/${this.socioId}/conductores`);
+    const querySnapshot = await getDocs(conductoresRef);
+    const conductoresIds = querySnapshot.docs.map(doc => doc.id);
+
+    if (conductoresIds.length === 0) return;
+
     const usuariosRef = collection(this.firestore, 'usuarios');
-    const q = query(usuariosRef, where('socio', '==', false));
-    const querySnapshot = await getDocs(q);
-    this.conductores = querySnapshot.docs.map(doc => {
+    const q = query(usuariosRef, where('id', 'in', conductoresIds));
+    const usuariosSnapshot = await getDocs(q);
+    this.conductores = usuariosSnapshot.docs.map(doc => {
       const data = doc.data() as ConductorI;
       data.id = doc.id;
       return data;

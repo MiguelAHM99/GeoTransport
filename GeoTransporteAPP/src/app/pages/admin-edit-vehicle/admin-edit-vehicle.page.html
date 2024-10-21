@@ -11,20 +11,20 @@
   <ion-card>
     <ion-item>
       <ion-label position="floating">Nombre</ion-label>
-      <ion-input [(ngModel)]="newvehiculo.nombre" required maxlength="12"></ion-input>
+      <ion-input [(ngModel)]="newVehiculo.nombre" required maxlength="12"></ion-input>
     </ion-item>
-    <ion-text *ngIf="!newvehiculo.nombre && cargando" color="danger">
+    <ion-text *ngIf="!newVehiculo.nombre && cargando" color="danger">
       El nombre es obligatorio.
     </ion-text>
-    <ion-text *ngIf="newvehiculo.nombre?.length > 12" color="danger">
+    <ion-text *ngIf="newVehiculo.nombre?.length > 12" color="danger">
       El nombre no puede tener más de 12 caracteres.
     </ion-text>
 
     <ion-item>
       <ion-label position="floating">Patente</ion-label>
-      <ion-input [(ngModel)]="newvehiculo.patente" (ionInput)="formatPatente()" required maxlength="9"></ion-input>
+      <ion-input [(ngModel)]="newVehiculo.patente" (ionInput)="formatPatente()" required maxlength="9"></ion-input>
     </ion-item>
-    <ion-text *ngIf="!newvehiculo.patente && cargando" color="danger">
+    <ion-text *ngIf="!newVehiculo.patente && cargando" color="danger">
       La patente es obligatoria.
     </ion-text>
     <ion-text *ngIf="!isPatenteValid()" color="danger">
