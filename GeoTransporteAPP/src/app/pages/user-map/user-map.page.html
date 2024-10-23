@@ -17,6 +17,12 @@
   </ion-header>
 
   <div style="padding: 20px;">
+    <ion-select placeholder="Seleccionar Servicio" (ionChange)="onServiceChange($event.detail.value)">
+      <ion-select-option *ngFor="let service of services" [value]="service.id">{{ service.Nombre }}</ion-select-option>
+    </ion-select>
+  </div>
+
+  <div *ngIf="selectedService" style="padding: 20px;">
     <ion-select placeholder="Seleccionar Rutas">
       <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.nombre">{{ ruta.nombre }}</ion-select-option>
     </ion-select>
@@ -24,6 +30,4 @@
 
   <ion-button (click)="printCurrentPosition()">Obtener Posición Actual</ion-button>
   <p>{{ currentPosition }}</p>
-
-
 </ion-content>
