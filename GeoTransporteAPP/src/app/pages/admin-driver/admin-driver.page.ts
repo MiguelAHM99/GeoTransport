@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ConductorI } from 'src/app/common/models/conductores.models';
 import { FirestoreService } from 'src/app/common/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, deleteDoc, setDoc, query, where } from '@angular/fire/firestore';
+import { Router } from '@angular/router';
+import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
 @Component({
   selector: 'app-admin-driver',
@@ -12,93 +14,66 @@ import { Firestore, collection, query, where, getDocs } from '@angular/fire/fire
 export class AdminDriverPage implements OnInit {
 
   conductores: ConductorI[] = [];
-  newConductor: ConductorI;
+  newConductor: ConductorI = {
+    id: '',
+    correo: '',
+    contrasenna: '',
+    socio: false
+  };
   cargando: boolean = false;
-  conductor: ConductorI;
-  showPassword: { [key: string]: boolean } = {}; // Controlar visibilidad de contraseñas
+  selectedServicio: string;
+  showPassword: { [key: string]: boolean } = {};
 
   constructor(
     private firestoreService: FirestoreService,
     private alertController: AlertController,
-    private firestore: Firestore
-  ) {
-    this.loadConductores();
-    this.initConductor();
-  }
+    private firestore: Firestore,
+    private router: Router,
+    private selectedServiceService: SelectedServiceService
+  ) { }
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.selectedServicio = this.selectedServiceService.getSelectedService();
+    this.loadConductores();
+  }
 
   // Cargar la colección completa de conductores
   async loadConductores() {
-    const usuariosRef = collection(this.firestore, 'usuarios');
-    const q = query(usuariosRef, where('socio', '==', false));
+    if (!this.selectedServicio) return;
+
+    this.cargando = true;
+    const conductoresRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
+    const q = query(conductoresRef, where('socio', '==', false));
     const querySnapshot = await getDocs(q);
     this.conductores = querySnapshot.docs.map(doc => {
       const data = doc.data() as ConductorI;
       data.id = doc.id;
       return data;
     });
-  }
-
-  // Inicializar un nuevo conductor con ID único
-  initConductor() {
-    this.newConductor = {
-      correo: '',
-      contrasenna: '',
-      socio: false,
-      id: this.firestoreService.createIdDoc()
-    };
-  }
-
-  // Validar campos antes de guardar o editar
-  validateInputs(): boolean {
-    if (!this.newConductor.correo || !this.newConductor.contrasenna) {
-      this.showAlert('Error', 'Por favor completa todos los campos');
-      return false;
-    }
-    return true;
-  }
-
-  // Mostrar un alert de error
-  async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK']
-    });
-    await alert.present();
+    this.cargando = false;
   }
 
   // Guardar el nuevo conductor en Firestore
   async save() {
-    if (!this.validateInputs()) return; // Si la validación falla, detener el guardado.
+    if (!this.isFormValid()) return; // Si la validación falla, detener el guardado.
+    
+    // Verificar si ya existe un conductor con el mismo correo
+    const conductoresRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
+    const q = query(conductoresRef, where('correo', '==', this.newConductor.correo));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      this.showAlert('Error', 'Ya existe un conductor con este correo.');
+      return;
+    }
+
     this.cargando = true;
-    await this.firestoreService.createDocument(this.newConductor, 'usuarios', this.newConductor.id);
+    this.newConductor.id = this.firestoreService.createIdDoc();
+    await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios`, this.newConductor.id), this.newConductor);
     this.cargando = false;
 
-    this.initConductor(); // Reiniciar el conductor para los campos de entrada
+    this.newConductor = { id: '', correo: '', contrasenna: '' ,socio: false}; // Reiniciar el conductor para los campos de entrada
     this.loadConductores(); // Recargar la lista de conductores
-  }
-
-  // Editar un conductor existente
-  async edit(conductor: ConductorI) {
-    const alert = await this.alertController.create({
-      header: 'Confirmar',
-      message: `¿Estás seguro de que deseas editar el conductor: ${conductor.correo}?`,
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Confirmar',
-          handler: () => {
-            this.newConductor = conductor; // Asignar el conductor a editar
-          }
-        }
-      ]
-    });
-    await alert.present();
   }
 
   // Eliminar un conductor existente
@@ -115,7 +90,7 @@ export class AdminDriverPage implements OnInit {
           text: 'Confirmar',
           handler: async () => {
             this.cargando = true;
-            await this.firestoreService.deleteDocument('usuarios', conductor.id);
+            await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios`, conductor.id));
             this.cargando = false;
             this.loadConductores(); // Recargar la lista de conductores
           }
@@ -125,19 +100,9 @@ export class AdminDriverPage implements OnInit {
     await alert.present();
   }
 
-  // Obtener un conductor por su UID (asegurarse de pasar un UID válido)
-  getConductor(uid: string) {
-    if (!uid) {
-      console.error('El UID proporcionado es inválido');
-      return;
-    }
-
-    this.firestoreService.getDocumentChanges<ConductorI>('usuarios', uid).subscribe(data => {
-      console.log('getConductor -> ', data);
-      if (data) {
-        this.conductor = data;
-      }
-    });
+  // Editar un conductor existente
+  edit(conductor: ConductorI) {
+    this.newConductor = { ...conductor };
   }
 
   // Método para validar si el formulario es válido
@@ -148,5 +113,15 @@ export class AdminDriverPage implements OnInit {
   // Método para alternar la visibilidad de la contraseña
   togglePasswordVisibility(conductorId: string) {
     this.showPassword[conductorId] = !this.showPassword[conductorId];
+  }
+
+  // Mostrar un alert de error
+  async showAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
   }
 }

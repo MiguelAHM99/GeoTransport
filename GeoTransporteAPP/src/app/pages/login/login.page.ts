@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
+import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
 @Component({
   selector: 'app-login',
@@ -10,17 +11,34 @@ import { Router } from '@angular/router';
 export class LoginPage implements OnInit {
   correo: string;
   contrasenna: string;
+  servicios: any[] = [];
+  selectedServicio: string;
 
-  constructor(private firestore: Firestore, private router: Router) { }
+  constructor(
+    private firestore: Firestore,
+    private router: Router,
+    private selectedServiceService: SelectedServiceService
+  ) { }
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.loadServicios();
+  }
+
+  async loadServicios() {
+    const serviciosRef = collection(this.firestore, 'Servicios');
+    const querySnapshot = await getDocs(serviciosRef);
+    this.servicios = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
 
   async onLogin() {
     try {
-      console.log('Iniciando sesión con:', this.correo);
+      console.log('Iniciando sesión con:', this.correo, 'en el servicio:', this.selectedServicio);
 
-      // Buscar el usuario en Firestore utilizando el correo
-      const usersRef = collection(this.firestore, 'usuarios');
+      // Guardar el servicio seleccionado en el servicio compartido
+      this.selectedServiceService.setSelectedService(this.selectedServicio);
+
+      // Buscar el usuario en Firestore utilizando el correo y el servicio seleccionado
+      const usersRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
       const q = query(usersRef, where('correo', '==', this.correo));
       const querySnapshot = await getDocs(q);
 
@@ -43,7 +61,7 @@ export class LoginPage implements OnInit {
 
       console.log('Usuario autenticado:', userData);
 
-      // Verificar el campo socio y redirigir al usuario
+      // Redirigir al usuario basado en su rol
       if (userData['socio']) {
         console.log('Usuario es socio, redirigiendo a /admin-driver');
         this.router.navigate(['/admin-driver']);

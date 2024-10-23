@@ -8,12 +8,6 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Conductores</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
   <ion-card>
     <ion-item>
       <ion-label position="floating">Correo</ion-label>
@@ -32,25 +26,28 @@
     </ion-text>
   </ion-card>
 
-  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid()">
+  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid() || cargando">
     Guardar
   </ion-button>
 
-<ion-card>    
-<ion-item *ngFor="let conductor of conductores">
+  <ion-card>
+    <ion-item *ngFor="let conductor of conductores">
       <ion-label>
         Correo: {{conductor.correo}} <br>
         Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
         <ng-template #hiddenPassword>********</ng-template>
       </ion-label>
       <ion-buttons slot="end">
-        <ion-button (click)="togglePasswordVisibility(conductor.id)" >
-          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'" ></ion-icon>
+        <ion-button (click)="togglePasswordVisibility(conductor.id)">
+          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
         </ion-button>
         <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
         <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
       </ion-buttons>
-   </ion-item>
- </ion-card>
- 
- </ion-content>
+    </ion-item>
+  </ion-card>
+
+  <ion-text *ngIf="conductores.length === 0" color="medium" class="no-conductores">
+    <p>No hay conductores disponibles.</p>
+  </ion-text>
+</ion-content>
