@@ -8,26 +8,8 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-  <ion-card>
-    <ion-item>
-      <ion-label position="floating">Correo</ion-label>
-      <ion-input [(ngModel)]="newConductor.correo" required></ion-input>
-    </ion-item>
-    <ion-text *ngIf="!newConductor.correo && cargando" color="danger">
-      El correo es obligatorio.
-    </ion-text>
-
-    <ion-item>
-      <ion-label position="floating">Contraseña</ion-label>
-      <ion-input [(ngModel)]="newConductor.contrasenna" type="password" required></ion-input>
-    </ion-item>
-    <ion-text *ngIf="!newConductor.contrasenna && cargando" color="danger">
-      La contraseña es obligatoria.
-    </ion-text>
-  </ion-card>
-
-  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid() || cargando">
-    Guardar
+  <ion-button (click)="create()" expand="block" shape="round">
+    Agregar Nuevo Conductor
   </ion-button>
 
   <ion-card>

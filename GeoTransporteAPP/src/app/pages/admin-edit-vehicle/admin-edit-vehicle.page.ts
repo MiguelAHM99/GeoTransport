@@ -107,8 +107,8 @@ export class AdminEditVehiclePage implements OnInit {
 
   // Validar si la patente tiene el formato correcto
   isPatenteValid(): boolean {
-    const regex = /^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/;
-    return regex.test(this.newVehiculo.patente || '');
+    const regex = /^[A-Z]{2}-[A-Z]{2}-[0-9]{2}$/;
+    return regex.test(this.newVehiculo.patente);
   }
 
   // Formatear la patente

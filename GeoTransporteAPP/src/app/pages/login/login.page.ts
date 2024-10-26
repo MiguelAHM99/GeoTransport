@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
+import { AuthService } from 'src/app/services/auth.service';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
 @Component({
@@ -11,14 +12,15 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
 export class LoginPage implements OnInit {
   correo: string;
   contrasenna: string;
-  servicios: any[] = [];
   selectedServicio: string;
+  servicios: any[] = [];
 
   constructor(
     private firestore: Firestore,
     private router: Router,
+    private authService: AuthService,
     private selectedServiceService: SelectedServiceService
-  ) { }
+  ) {}
 
   ngOnInit() {
     this.loadServicios();
@@ -30,21 +32,15 @@ export class LoginPage implements OnInit {
     this.servicios = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
-  async onLogin() {
+  async login() {
     try {
-      console.log('Iniciando sesión con:', this.correo, 'en el servicio:', this.selectedServicio);
-
-      // Guardar el servicio seleccionado en el servicio compartido
-      this.selectedServiceService.setSelectedService(this.selectedServicio);
-
-      // Buscar el usuario en Firestore utilizando el correo y el servicio seleccionado
-      const usersRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
-      const q = query(usersRef, where('correo', '==', this.correo));
+      const usuariosRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
+      const q = query(usuariosRef, where('correo', '==', this.correo));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        console.error('No se encontró el usuario con el correo proporcionado');
-        alert('No se encontró el usuario con el correo proporcionado');
+        console.error('Usuario no encontrado');
+        alert('Usuario no encontrado');
         return;
       }
 
@@ -60,6 +56,12 @@ export class LoginPage implements OnInit {
       }
 
       console.log('Usuario autenticado:', userData);
+
+      // Almacenar el ID del usuario autenticado en AuthService
+      this.authService.setCurrentUserId(userDoc.id);
+
+      // Almacenar el servicio seleccionado
+      this.selectedServiceService.setSelectedService(this.selectedServicio);
 
       // Redirigir al usuario basado en su rol
       if (userData['socio']) {

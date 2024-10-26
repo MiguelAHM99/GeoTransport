@@ -1,11 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-button routerLink="/inicio">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>Mapa Conductor</ion-title>
+    <ion-title>Conductor</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -20,14 +15,14 @@
     <ion-item>
       <ion-label>Seleccionar Ruta</ion-label>
       <ion-select [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta">
-        <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.nombre">{{ ruta.nombre }}</ion-select-option>
+        <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
       </ion-select>
     </ion-item>
 
     <ion-item>
       <ion-label>Seleccionar Vehículo</ion-label>
       <ion-select [(ngModel)]="selectedVehiculo" placeholder="Seleccionar Vehículo">
-        <ion-select-option *ngFor="let vehiculo of vehiculos" [value]="vehiculo.nombre">
+        <ion-select-option *ngFor="let vehiculo of vehiculos" [value]="vehiculo.id">
           {{ vehiculo.nombre }} - {{ vehiculo.patente }}
         </ion-select-option>
       </ion-select>

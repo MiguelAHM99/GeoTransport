@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ConductorI } from 'src/app/common/models/conductores.models';
 import { FirestoreService } from 'src/app/common/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, getDocs, doc, deleteDoc, setDoc, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, deleteDoc, query, where } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
@@ -14,12 +14,6 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
 export class AdminDriverPage implements OnInit {
 
   conductores: ConductorI[] = [];
-  newConductor: ConductorI = {
-    id: '',
-    correo: '',
-    contrasenna: '',
-    socio: false
-  };
   cargando: boolean = false;
   selectedServicio: string;
   showPassword: { [key: string]: boolean } = {};
@@ -53,29 +47,6 @@ export class AdminDriverPage implements OnInit {
     this.cargando = false;
   }
 
-  // Guardar el nuevo conductor en Firestore
-  async save() {
-    if (!this.isFormValid()) return; // Si la validación falla, detener el guardado.
-    
-    // Verificar si ya existe un conductor con el mismo correo
-    const conductoresRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
-    const q = query(conductoresRef, where('correo', '==', this.newConductor.correo));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      this.showAlert('Error', 'Ya existe un conductor con este correo.');
-      return;
-    }
-
-    this.cargando = true;
-    this.newConductor.id = this.firestoreService.createIdDoc();
-    await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios`, this.newConductor.id), this.newConductor);
-    this.cargando = false;
-
-    this.newConductor = { id: '', correo: '', contrasenna: '' ,socio: false}; // Reiniciar el conductor para los campos de entrada
-    this.loadConductores(); // Recargar la lista de conductores
-  }
-
   // Eliminar un conductor existente
   async delete(conductor: ConductorI) {
     const alert = await this.alertController.create({
@@ -100,28 +71,18 @@ export class AdminDriverPage implements OnInit {
     await alert.present();
   }
 
-  // Editar un conductor existente
+  // Navegar a la página de edición de conductores
   edit(conductor: ConductorI) {
-    this.newConductor = { ...conductor };
+    this.router.navigate(['/admin-edit-driver', conductor.id]);
   }
 
-  // Método para validar si el formulario es válido
-  isFormValid(): boolean {
-    return !!this.newConductor.correo && !!this.newConductor.contrasenna;
+  // Navegar a la página de creación de conductores
+  create() {
+    this.router.navigate(['/admin-edit-driver']);
   }
 
   // Método para alternar la visibilidad de la contraseña
   togglePasswordVisibility(conductorId: string) {
     this.showPassword[conductorId] = !this.showPassword[conductorId];
-  }
-
-  // Mostrar un alert de error
-  async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK']
-    });
-    await alert.present();
   }
 }

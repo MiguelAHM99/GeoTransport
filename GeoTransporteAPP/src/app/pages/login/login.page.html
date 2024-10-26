@@ -4,7 +4,7 @@
       <ion-button routerLink="/inicio">
         <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
       </ion-button>
-    </ion-buttons>  
+    </ion-buttons>
     <ion-title>Inicio sesión</ion-title>
   </ion-toolbar>
 </ion-header>
@@ -17,7 +17,7 @@
   </ion-header>
 
   <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px;">
-    <form (ngSubmit)="onLogin()">
+    <form (ngSubmit)="login()">
       <ion-item>
         <ion-label position="floating">Servicio</ion-label>
         <ion-select [(ngModel)]="selectedServicio" name="servicio" required>
