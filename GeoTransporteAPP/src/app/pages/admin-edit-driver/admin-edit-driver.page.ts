@@ -151,6 +151,7 @@ export class AdminEditDriverPage implements OnInit {
       this.newConductor.id = this.firestoreService.createIdDoc();
       const conductorDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios`, this.newConductor.id);
       batch.set(conductorDocRef, this.newConductor);
+      //El conductor almacena todos los datos de las tablas, pero solo utiliza el ID para consultar la tabla general del servicio
 
       // Crear la subcolección de vehículos
       const vehiculoPromises = this.selectedVehiculos.map(async vehiculoId => {
