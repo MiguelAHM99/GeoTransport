@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  mapsKey: 'AIzaSyC47HkOHPl4x5jKX2k4WVQQoNwsUMOJ4mc',
   firebaseConfig: {
     apiKey: "AIzaSyAo0rQPfzmShwbPHg9cCzjCgqv9w0FdQgQ",
     authDomain: "geo-trans-4e024.firebaseapp.com",

@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, viewChild } from '@angular/core';
 import { Firestore, collection, getDocs } from '@angular/fire/firestore';
 import { Geolocation } from '@capacitor/geolocation';
+import { GoogleMap } from '@capacitor/google-maps';
+import { environment } from 'src/environments/environment.prod';
 
 @Component({
   selector: 'app-user-map',
@@ -8,12 +10,35 @@ import { Geolocation } from '@capacitor/geolocation';
   styleUrls: ['./user-map.page.scss'],
 })
 export class UserMapPage implements OnInit {
+
+  @ViewChild('map')mapRef: ElementRef;
+  map: GoogleMap;
+
   currentPosition: string = 'Esperando posición...';
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
 
   constructor(private firestore: Firestore) { }
+
+  ionViewDidEnter(){
+    this.createMap();
+  }
+
+  async createMap() {
+    this.map = await GoogleMap.create({
+      id: 'my-map',
+      apiKey : environment.mapsKey,
+      element : this.mapRef.nativeElement,
+      config: {
+        center: {
+          lat: 33.6,
+          lng: -117.9,
+        },
+        zoom: 8,
+      },
+    });
+  }
 
   ngOnInit() {
     this.getServices();

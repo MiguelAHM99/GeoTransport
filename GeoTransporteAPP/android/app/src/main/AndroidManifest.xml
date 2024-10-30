@@ -31,8 +31,10 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
+                android:resource="@xml/file_paths" />
         </provider>
+
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyC47HkOHPl4x5jKX2k4WVQQoNwsUMOJ4mc"/>
     </application>
 
     <!-- Permissions -->
@@ -43,3 +45,4 @@
     <uses-feature android:name="android.hardware.location.gps" />
 
 </manifest>
+
