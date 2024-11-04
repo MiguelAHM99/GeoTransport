@@ -2,7 +2,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "types": ["@types/google.maps","node", "google.maps"], // Added google.maps
+    "types": ["@types/google.maps","node", "google.maps"],
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
