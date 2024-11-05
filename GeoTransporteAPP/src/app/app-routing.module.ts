@@ -54,7 +54,11 @@ const routes: Routes = [
   {
     path: 'admin-edit-vehicle/:id',
     loadChildren: () => import('./pages/admin-edit-vehicle/admin-edit-vehicle.module').then(m => m.AdminEditVehiclePageModule)
+  },  {
+    path: 'admin-panel',
+    loadChildren: () => import('./pages/admin-panel/admin-panel.module').then( m => m.AdminPanelPageModule)
   }
+
 ];
 
 @NgModule({

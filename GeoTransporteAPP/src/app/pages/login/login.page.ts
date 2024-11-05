@@ -59,6 +59,7 @@ export class LoginPage implements OnInit {
 
       // Almacenar el ID del usuario autenticado en AuthService
       this.authService.setCurrentUserId(userDoc.id);
+      this.authService.setCurrentUserEmail(this.correo);
 
       // Almacenar el servicio seleccionado
       this.selectedServiceService.setSelectedService(this.selectedServicio);

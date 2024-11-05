@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Firestore, collection, getDocs, doc, getDoc } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 import { AuthService } from 'src/app/services/auth.service';
 
@@ -15,7 +15,9 @@ export class DriverMapPage implements OnInit {
   selectedVehiculo: string;
   serviceId: string;
   conductorId: string;
+  conductorCorreo: string;
   cargando: boolean = false;
+  recorridoIniciado: boolean = false; 
 
   constructor(
     private firestore: Firestore,
@@ -23,14 +25,16 @@ export class DriverMapPage implements OnInit {
     private authService: AuthService
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     console.log('DriverMapPage inicializado');
     this.serviceId = this.selectedServiceService.getSelectedService();
     console.log(`ID del servicio obtenido: ${this.serviceId}`);
     this.conductorId = this.authService.getCurrentUserId(); // Obtener el ID del usuario autenticado
+    this.conductorCorreo = this.authService.getCurrentUserEmail(); // Obtener el correo del usuario autenticado
     console.log(`ID del conductor obtenido: ${this.conductorId}`);
-    this.getRutas();
-    this.getVehiculos();
+    console.log(`Correo del conductor obtenido: ${this.conductorCorreo}`);
+    await this.getRutas();
+    await this.getVehiculos();
   }
 
   async getRutas() {
@@ -40,6 +44,7 @@ export class DriverMapPage implements OnInit {
       const querySnapshot = await getDocs(rutasRef);
       console.log('Instantánea de consulta de rutas:', querySnapshot);
       console.log('Número de documentos de rutas:', querySnapshot.size);
+
       const rutaIds = querySnapshot.docs.map(doc => doc.id);
       console.log('IDs de rutas obtenidos:', rutaIds);
 
@@ -67,6 +72,12 @@ export class DriverMapPage implements OnInit {
       const querySnapshot = await getDocs(vehiculosRef);
       console.log('Instantánea de consulta de vehículos:', querySnapshot);
       console.log('Número de documentos de vehículos:', querySnapshot.size);
+
+      // Obtener IDs de vehículos del conductor
+      const conductorVehiculosRef = collection(this.firestore, `Conductores/${this.conductorId}/vehiculos`);
+      const conductorVehiculosSnapshot = await getDocs(conductorVehiculosRef);
+      const conductorVehiculosIds = conductorVehiculosSnapshot.docs.map(doc => doc.id);
+      console.log('IDs de vehículos del conductor:', conductorVehiculosIds);
       const vehiculoIds = querySnapshot.docs.map(doc => doc.id);
       console.log('IDs de vehículos obtenidos:', vehiculoIds);
 
@@ -84,6 +95,70 @@ export class DriverMapPage implements OnInit {
       console.log('Vehículos obtenidos:', this.vehiculos);
     } catch (error) {
       console.error('Error obteniendo vehículos:', error);
+    }
+  }
+
+  async iniciarRecorrido() {
+    this.recorridoIniciado = true;
+
+    // Obtener detalles de la ruta seleccionada
+    const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
+    const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
+
+    if (rutaSeleccionada && vehiculoSeleccionado) {
+      try {
+        // Generar ID personalizado
+        const timestamp = new Date();
+        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
+
+        // Guardar en la colección historial
+        const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
+        await setDoc(historialRef, {
+          conductor: this.conductorCorreo,
+          patente: vehiculoSeleccionado.patente,
+          nombreVehiculo: vehiculoSeleccionado.nombre,
+          nombreRuta: rutaSeleccionada.nombre,
+          estado: 'Inicio de ruta',
+          timestamp: timestamp
+        });
+        console.log('Historial guardado correctamente');
+      } catch (error) {
+        console.error('Error guardando en el historial:', error);
+      }
+    } else {
+      console.error('Ruta o vehículo no seleccionados correctamente');
+    }
+  }
+
+  async finalizarRecorrido() {
+    this.recorridoIniciado = false;
+
+    // Obtener detalles de la ruta seleccionada
+    const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
+    const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
+
+    if (rutaSeleccionada && vehiculoSeleccionado) {
+      try {
+        // Generar ID personalizado
+        const timestamp = new Date();
+        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Termino-${this.conductorCorreo}`;
+
+        // Guardar en la colección historial
+        const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
+        await setDoc(historialRef, {
+          conductor: this.conductorCorreo,
+          patente: vehiculoSeleccionado.patente,
+          nombreVehiculo: vehiculoSeleccionado.nombre,
+          nombreRuta: rutaSeleccionada.nombre,
+          estado: 'Ruta finalizada',
+          timestamp: timestamp
+        });
+        console.log('Historial guardado correctamente');
+      } catch (error) {
+        console.error('Error guardando en el historial:', error);
+      }
+    } else {
+      console.error('Ruta o vehículo no seleccionados correctamente');
     }
   }
 }
