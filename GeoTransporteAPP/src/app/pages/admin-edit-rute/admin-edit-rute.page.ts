@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { RutaI } from 'src/app/common/models/rutas.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { RutaI } from 'src/app/models/rutas.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
@@ -25,12 +25,12 @@ export class AdminEditRutePage implements OnInit {
   selectedServicio: string;
 
   constructor(
-    private firestoreService: FirestoreService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private alertController: AlertController,
-    private firestore: Firestore,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly alertController: AlertController,
+    private readonly firestore: Firestore,
+    private readonly selectedServiceService: SelectedServiceService
   ) { 
     this.rutaId = this.route.snapshot.paramMap.get('id');
     this.selectedServicio = this.selectedServiceService.getSelectedService();

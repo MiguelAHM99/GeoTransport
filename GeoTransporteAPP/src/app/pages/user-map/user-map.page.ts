@@ -21,7 +21,7 @@ export class UserMapPage implements OnInit {
   selectedService: string = '';
   rutas: any[] = [];
 
-  constructor(private firestore: Firestore) { }
+  constructor(private readonly firestore: Firestore) { }
 
   ionViewDidEnter(){
     this.createMap();

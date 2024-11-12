@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { RutaI } from 'src/app/common/models/rutas.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { RutaI } from 'src/app/models/rutas.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular'; 
 import { Router } from '@angular/router';
 import { Firestore, collection, getDocs, doc, deleteDoc } from '@angular/fire/firestore';
@@ -18,11 +18,11 @@ export class AdminRutePage implements OnInit {
   selectedServicio: string;
 
   constructor(
-    private firestoreService: FirestoreService,
-    private alertController: AlertController,    
-    private router: Router,
-    private firestore: Firestore,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly alertController: AlertController,    
+    private readonly router: Router,
+    private readonly firestore: Firestore,
+    private readonly selectedServiceService: SelectedServiceService
   ) { 
     this.initRutas();
   }

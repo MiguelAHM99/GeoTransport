@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { ConductorI } from 'src/app/common/models/conductores.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { ConductorI } from 'src/app/models/conductores.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular';
 import { Firestore, collection, getDocs, doc, deleteDoc, query, where } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
@@ -19,11 +19,11 @@ export class AdminDriverPage implements OnInit {
   showPassword: { [key: string]: boolean } = {};
 
   constructor(
-    private firestoreService: FirestoreService,
-    private alertController: AlertController,
-    private firestore: Firestore,
-    private router: Router,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly alertController: AlertController,
+    private readonly firestore: Firestore,
+    private readonly router: Router,
+    private readonly selectedServiceService: SelectedServiceService
   ) { }
 
   ngOnInit() {

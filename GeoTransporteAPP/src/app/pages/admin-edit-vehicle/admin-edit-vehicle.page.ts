@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { VehiculoI } from 'src/app/common/models/vehiculos.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { VehiculoI } from 'src/app/models/vehiculos.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { Firestore, doc, getDoc, setDoc, collection, getDocs, query, where } from '@angular/fire/firestore';
@@ -23,12 +23,12 @@ export class AdminEditVehiclePage implements OnInit {
   vehiculoId: string | null = null;
 
   constructor(
-    private firestoreService: FirestoreService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private alertController: AlertController,
-    private firestore: Firestore,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly alertController: AlertController,
+    private readonly firestore: Firestore,
+    private readonly selectedServiceService: SelectedServiceService
   ) { 
     this.vehiculoId = this.route.snapshot.paramMap.get('id');
     this.selectedServicio = this.selectedServiceService.getSelectedService();

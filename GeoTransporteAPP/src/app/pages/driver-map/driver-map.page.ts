@@ -20,9 +20,9 @@ export class DriverMapPage implements OnInit {
   recorridoIniciado: boolean = false; 
 
   constructor(
-    private firestore: Firestore,
-    private selectedServiceService: SelectedServiceService,
-    private authService: AuthService
+    private readonly firestore: Firestore,
+    private readonly selectedServiceService: SelectedServiceService,
+    private readonly authService: AuthService
   ) {}
 
   async ngOnInit() {

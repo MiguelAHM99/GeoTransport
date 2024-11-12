@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { VehiculoI } from 'src/app/common/models/vehiculos.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { VehiculoI } from 'src/app/models/vehiculos.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular';
 import { Firestore, collection, query, where, getDocs, doc, getDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
@@ -20,11 +20,11 @@ export class AdminVehiclePage implements OnInit {
   selectedServicio: string;
 
   constructor(
-    private firestoreService: FirestoreService,
-    private alertController: AlertController,
-    private firestore: Firestore,
-    private router: Router,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly alertController: AlertController,
+    private readonly firestore: Firestore,
+    private readonly router: Router,
+    private readonly selectedServiceService: SelectedServiceService
   ) {
     this.initVehiculo();
   }

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { ConductorI } from 'src/app/common/models/conductores.models';
-import { VehiculoI } from 'src/app/common/models/vehiculos.models';
-import { RutaI } from 'src/app/common/models/rutas.models';
-import { FirestoreService } from 'src/app/common/services/firestore.service';
+import { ConductorI } from 'src/app/models/conductores.models';
+import { VehiculoI } from 'src/app/models/vehiculos.models';
+import { RutaI } from 'src/app/models/rutas.models';
+import { FirestoreService } from 'src/app/services/firestore.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { Firestore, doc, getDoc, setDoc, collection, getDocs, query, where, writeBatch } from '@angular/fire/firestore';
@@ -30,12 +30,12 @@ export class AdminEditDriverPage implements OnInit {
   conductorId: string | null = null;
 
   constructor(
-    private firestoreService: FirestoreService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private alertController: AlertController,
-    private firestore: Firestore,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestoreService: FirestoreService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly alertController: AlertController,
+    private readonly firestore: Firestore,
+    private readonly selectedServiceService: SelectedServiceService
   ) { 
     this.conductorId = this.route.snapshot.paramMap.get('id');
     this.selectedServicio = this.selectedServiceService.getSelectedService();

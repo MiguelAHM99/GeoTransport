@@ -16,10 +16,10 @@ export class LoginPage implements OnInit {
   servicios: any[] = [];
 
   constructor(
-    private firestore: Firestore,
-    private router: Router,
-    private authService: AuthService,
-    private selectedServiceService: SelectedServiceService
+    private readonly firestore: Firestore,
+    private readonly router: Router,
+    private readonly authService: AuthService,
+    private readonly selectedServiceService: SelectedServiceService
   ) {}
 
   ngOnInit() {
