@@ -1,13 +1,43 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>driverMap</ion-title>
+    <ion-buttons slot="start">
+      <ion-button routerLink="/inicio">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Conductor</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">driverMap</ion-title>
+      <ion-title size="large">Conductor</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <div style="padding: 20px;">
+    <ion-item>
+      <ion-label>Seleccionar Ruta</ion-label>
+      <ion-select [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta" [disabled]="recorridoIniciado">
+        <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>Seleccionar Vehículo</ion-label>
+      <ion-select [(ngModel)]="selectedVehiculo" placeholder="Seleccionar Vehículo" [disabled]="recorridoIniciado">
+        <ion-select-option *ngFor="let vehiculo of vehiculos" [value]="vehiculo.id">
+          {{ vehiculo.nombre }} - {{ vehiculo.patente }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-button *ngIf="!recorridoIniciado" (click)="iniciarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+      Iniciar recorrido
+    </ion-button>
+    <ion-button *ngIf="recorridoIniciado" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+      Finalizar recorrido
+    </ion-button>
+  </div>
 </ion-content>

@@ -6,20 +6,30 @@
       </ion-button>
     </ion-buttons>
     <ion-title>Rutas</ion-title>
-    <ion-buttons slot="end">
-      <ion-select placeholder="Seleccionar Rutas">
-        <ion-select-option value="option1">Ruta 1</ion-select-option>
-        <ion-select-option value="option2">Ruta 2</ion-select-option>
-        <ion-select-option value="option3">Ruta 3</ion-select-option>
-      </ion-select>
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">userMap</ion-title>
+      <ion-title size="large">Mapa Usuario</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <div style="padding: 20px;">
+    <ion-select placeholder="Seleccionar Servicio" (ionChange)="onServiceChange($event.detail.value)">
+      <ion-select-option *ngFor="let service of services" [value]="service.id">{{ service.Nombre }}</ion-select-option>
+    </ion-select>
+  </div>
+
+  <div *ngIf="selectedService" style="padding: 20px;">
+    <ion-select placeholder="Seleccionar Rutas">
+      <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.nombre">{{ ruta.nombre }}</ion-select-option>
+    </ion-select>
+  </div>
+
+  <ion-button (click)="UbicacionActual()">Obtener Posición Actual</ion-button>
+  <p>{{ currentPosition }}</p>
+
+  <div #map class="map-container"></div>
 </ion-content>

@@ -7,11 +7,29 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Conductores</ion-title>
-    </ion-toolbar>
-  </ion-header>
-  <!-- Contenido de la página de conductores -->
+<ion-content [fullscreen]="true" id="main-content">
+  <ion-button (click)="create()" expand="block" shape="round">
+    Agregar Nuevo Conductor
+  </ion-button>
+
+  <ion-card>
+    <ion-item *ngFor="let conductor of conductores">
+      <ion-label>
+        Correo: {{conductor.correo}} <br>
+        Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
+        <ng-template #hiddenPassword>********</ng-template>
+      </ion-label>
+      <ion-buttons slot="end">
+        <ion-button (click)="togglePasswordVisibility(conductor.id)">
+          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
+        </ion-button>
+        <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
+        <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
+      </ion-buttons>
+    </ion-item>
+  </ion-card>
+
+  <ion-text *ngIf="conductores.length === 0" color="medium" class="no-conductores">
+    <p>No hay conductores disponibles.</p>
+  </ion-text>
 </ion-content>

@@ -1,13 +1,47 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>adminEditDriver</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/admin-driver"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ conductorId ? 'Editar Conductor' : 'Agregar Conductor' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">adminEditDriver</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" id="main-content">
+  <ion-card>
+    <ion-item>
+      <ion-label position="floating">Correo</ion-label>
+      <ion-input [(ngModel)]="newConductor.correo" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Contraseña</ion-label>
+      <ion-input [(ngModel)]="newConductor.contrasenna" type="password" required></ion-input>
+    </ion-item>
+  </ion-card>
+
+  <ion-card>
+    <ion-item>
+      <ion-label>Vehículos</ion-label>
+      <ion-select [(ngModel)]="selectedVehiculos" multiple="true" cancelText="Cancelar" okText="Aceptar">
+        <ion-select-option *ngFor="let vehiculo of vehiculos" [value]="vehiculo.id">
+          {{ vehiculo.nombre }} - {{ vehiculo.patente }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+  </ion-card>
+
+  <ion-card>
+    <ion-item>
+      <ion-label>Rutas</ion-label>
+      <ion-select [(ngModel)]="selectedRutas" multiple="true" cancelText="Cancelar" okText="Aceptar">
+        <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">
+          {{ ruta.nombre }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+  </ion-card>
+
+  <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid() || cargando">
+    Guardar
+  </ion-button>
 </ion-content>

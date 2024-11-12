@@ -8,43 +8,26 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Rutas</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-button class="add-button" shape="round" routerLink="/admin-edit-rute">
+    Agregar Nueva Ruta
+  </ion-button>
 
-  <div class="table-container">
-    <ion-button class="add-button" shape="round" routerLink="/admin-edit-rute">
-      Agregar Nueva Ruta
-    </ion-button>
+  <ion-card>
+    <ion-item *ngFor="let ruta of rutas">
+      <ion-label>
+        Nombre: {{ruta.nombre}} <br>
+        Descripción: {{ruta.descripcion}} <br>
+        Inicio: {{ruta.inicio}} <br>
+        Destino: {{ruta.destino}}
+      </ion-label>
+      <ion-buttons slot="end">
+        <ion-button (click)="edit(ruta)" color="warning">Editar</ion-button>
+        <ion-button (click)="delete(ruta)" color="danger">Eliminar</ion-button>
+      </ion-buttons>
+    </ion-item>
+  </ion-card>
 
-    <table class="vehiculos-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th>Inicio</th>
-          <th>Destino</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let ruta of rutas">
-          <td>{{ruta.nombre}}</td>
-          <td>{{ruta.descripcion}}</td>
-          <td>{{ruta.inicio}}</td>
-          <td>{{ruta.destino}}</td>
-          <td>
-            <ion-button color="warning" (click)="edit(ruta)">Editar</ion-button>
-            <ion-button color="danger" (click)="delete(ruta)">Eliminar</ion-button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <ion-text *ngIf="rutas.length === 0" color="medium" class="no-vehiculos">
-      <p>No hay rutas disponibles.</p>
-    </ion-text>
-  </div>
+  <ion-text *ngIf="rutas.length === 0" color="medium" class="no-rutas">
+    <p>No hay rutas disponibles.</p>
+  </ion-text>
 </ion-content>
