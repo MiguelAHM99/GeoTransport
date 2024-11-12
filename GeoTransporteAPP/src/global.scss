@@ -48,14 +48,19 @@ ion-form {
 
 /* Botones estilizados */
 .styled-button {
+  width: 100%; /* Botones más amplios en pantallas pequeñas */
+  --padding-start: 20px;
+  --padding-end: 20px;
+   --border-radius: 8px;
   --background: var(--ion-color-primary);
   --color: var(--ion-color-primary-contrast);
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 16px;
+    font-size: 16px;
+  --background: var(--ion-color-primary);
+  --color: var(--ion-color-primary-contrast);
   text-transform: uppercase;
-  margin: 12px 0;
+  margin: 15px 0;
   transition: background-color 0.3s ease, transform 0.2s ease;
+  
 }
 
 .styled-button:hover {
@@ -92,9 +97,16 @@ ion-card-header {
 @media (max-width: 768px) {
   .styled-button {
     width: 100%; /* Botones más amplios en pantallas pequeñas */
+    --padding-start: 20px;
+    --padding-end: 20px;
+    --border-radius: 8px;
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
+    font-size: 16px;
   }
 
   ion-card {
-    width: 90%; /* Tarjetas más estrechas en pantallas pequeñas */
+    width: 100%; /* Tarjetas más estrechas en pantallas pequeñas */
+    
   }
 }

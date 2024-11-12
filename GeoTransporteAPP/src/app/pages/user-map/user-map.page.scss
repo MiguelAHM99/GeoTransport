@@ -1,4 +1,17 @@
+/* Contenedor del mapa */
+.map-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+
+}
+
 .map-container {
-    width: 100%;
-    height: 100%;
-  }
+  width: 100%;
+  max-width: 100%; /* Ajusta el ancho máximo */
+  height: 36em; /* Ajusta la altura */
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff; /* Fondo blanco */
+}
