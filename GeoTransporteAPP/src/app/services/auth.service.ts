@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FirestoreService } from './firestore.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -8,9 +9,30 @@ export class AuthService {
   private currentUserId: string;
   private currentUserEmail: string;
   private isSocio: boolean | undefined; // Usamos undefined para manejar posibles valores no definidos
+  private loggedIn = new BehaviorSubject<boolean>(false); // Valor inicial, modifícalo según el estado real de autenticación
 
-  constructor(private readonly firestoreService: FirestoreService) {}
+  constructor(
+    private readonly firestoreService: FirestoreService) 
+  {
+     // Puedes inicializar el estado real aquí, por ejemplo, leyendo un token de almacenamiento local
+     const token = localStorage.getItem('token'); // Ejemplo
+     this.loggedIn.next(!!token);
+  }
 
+  // Devuelve el estado de autenticación como Observable
+  isAuthenticated(): Observable<boolean> {
+    return this.loggedIn.asObservable();
+  }
+
+  // Métodos para cambiar el estado de autenticación
+  login() {
+    this.loggedIn.next(true);
+  }
+
+  logout() {
+    this.loggedIn.next(false);
+    localStorage.removeItem('token'); // Ejemplo de limpieza de token
+  }
   // Método asincrónico para establecer el ID y obtener los datos del usuario
   async setCurrentUserId(userId: string, servicioId: string): Promise<void> {
     this.currentUserId = userId;

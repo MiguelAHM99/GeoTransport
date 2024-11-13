@@ -1,20 +1,25 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { SocioGuard } from 'src/app/guards/socio.guard';
+import { AuthGuard } from 'src/app/guards/auth.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'inicio', pathMatch: 'full' },
   {
     path: 'inicio',
-    loadChildren: () => import('./pages/inicio/inicio.module').then(m => m.InicioPageModule)
+    loadChildren: () => import('./pages/inicio/inicio.module').then(m => m.InicioPageModule),
+    canActivate: [AuthGuard] // Protege la ruta de login
+
   },
   {
     path: 'user-map',
-    loadChildren: () => import('./pages/user-map/user-map.module').then(m => m.UserMapPageModule)
+    loadChildren: () => import('./pages/user-map/user-map.module').then(m => m.UserMapPageModule),
+    canActivate: [AuthGuard] // Protege la ruta de login
   },
   {
     path: 'login',
-    loadChildren: () => import('./pages/login/login.module').then(m => m.LoginPageModule)
+    loadChildren: () => import('./pages/login/login.module').then(m => m.LoginPageModule),
+    canActivate: [AuthGuard] // Protege la ruta de login
   },
   {
     path: 'driver-map',
