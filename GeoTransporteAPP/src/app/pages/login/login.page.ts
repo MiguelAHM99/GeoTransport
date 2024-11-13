@@ -26,14 +26,21 @@ export class LoginPage implements OnInit {
     this.loadServicios();
   }
 
+  // Cargar los servicios disponibles
   async loadServicios() {
     const serviciosRef = collection(this.firestore, 'Servicios');
     const querySnapshot = await getDocs(serviciosRef);
     this.servicios = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
+  // Función de login
   async login() {
     try {
+      if (!this.selectedServicio) {
+        alert('Por favor, seleccione un servicio.');
+        return;
+      }
+
       const usuariosRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
       const q = query(usuariosRef, where('correo', '==', this.correo));
       const querySnapshot = await getDocs(q);
@@ -58,23 +65,35 @@ export class LoginPage implements OnInit {
       console.log('Usuario autenticado:', userData);
 
       // Almacenar el ID del usuario autenticado en AuthService
-      this.authService.setCurrentUserId(userDoc.id);
+      await this.authService.setCurrentUserId(userDoc.id,this.selectedServicio);  // Esperar a que se complete
       this.authService.setCurrentUserEmail(this.correo);
+
+      console.log('Email almacenado:', this.authService.getCurrentUserEmail());
+      console.log('ID almacenado:', this.authService.getCurrentUserId());
 
       // Almacenar el servicio seleccionado
       this.selectedServiceService.setSelectedService(this.selectedServicio);
 
-      // Redirigir al usuario basado en su rol
-      if (userData['socio']) {
-        console.log('Usuario es socio, redirigiendo a /admin-driver');
-        this.router.navigate(['/admin-driver']);
+      // Depuración adicional
+      console.log('Es socio?', this.authService.userIsSocio());
+      console.log('Es conductor?', this.authService.userIsConductor());
+      
+      // Redirigir según el rol del usuario
+      if (this.authService.userIsSocio()) {
+        console.log("Redirigiendo a /admin-driver");
+        await this.router.navigate(['/admin-driver']);
+        console.log("Redirección a /admin-driver completada");
+      } else if (this.authService.userIsConductor()) {
+        console.log("Redirigiendo a /driver-map");
+        await this.router.navigate(['/driver-map']);
+        console.log("Redirección a /driver-map completada");
       } else {
-        console.log('Usuario no es socio, redirigiendo a /driver-map');
-        this.router.navigate(['/driver-map']);
+        console.error("No se pudo determinar el rol del usuario");
+        await this.router.navigate(['/login']);
       }
-    } catch (error) {
-      console.error('Error en el login:', error);
-      alert('Error en el login: ' + (error as Error).message);
+    } catch (error: any) { // Especifica el tipo del parámetro error
+      console.error("Error durante la autenticación:", error);
     }
   }
 }
+
