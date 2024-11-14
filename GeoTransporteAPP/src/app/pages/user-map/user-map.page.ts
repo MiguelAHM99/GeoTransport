@@ -16,7 +16,7 @@ export class UserMapPage implements OnInit {
 
   currentPosition: string = 'Esperando posición...';
   currentMarkerId: string | null = null;
-  watchId: string | null = null; // Almacena el ID del watcher para detenerlo cuando sea necesario
+  watchId: string | null = null;
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
@@ -27,7 +27,6 @@ export class UserMapPage implements OnInit {
     this.createMap();
   }
 
-  // Método para iniciar la vigilancia de la ubicación
   UbicacionActual = async () => {
     this.watchId = await Geolocation.watchPosition({}, async (position, err) => {
       if (err) {
@@ -41,7 +40,6 @@ export class UserMapPage implements OnInit {
         this.currentPosition = `Posición actual: Latitud: ${latitude}, Longitud: ${longitude}`;
         console.log('Posición actual:', this.currentPosition);
 
-        // Centrar el mapa en la nueva posición
         await this.map.setCamera({
           coordinate: {
             lat: latitude,
@@ -50,7 +48,6 @@ export class UserMapPage implements OnInit {
           zoom: 14,
         });
 
-        // Actualizar o añadir el marcador en la nueva ubicación
         if (this.currentMarkerId) {
           await this.map.removeMarker(this.currentMarkerId);
         }
@@ -67,7 +64,6 @@ export class UserMapPage implements OnInit {
     });
   };
 
-  // Crear el mapa y comenzar a observar la posición
   async createMap() {
     try {
       this.map = await GoogleMap.create({
@@ -83,7 +79,6 @@ export class UserMapPage implements OnInit {
         },
       });
       
-      // Inicia el seguimiento de la posición del usuario
       this.UbicacionActual();
       
     } catch (error) {
@@ -96,7 +91,6 @@ export class UserMapPage implements OnInit {
   }
 
   ngOnDestroy() {
-    // Detener la vigilancia de la posición cuando se destruya el componente
     if (this.watchId) {
       Geolocation.clearWatch({ id: this.watchId });
     }
@@ -116,6 +110,25 @@ export class UserMapPage implements OnInit {
     const querySnapshot = await getDocs(rutasRef);
     this.rutas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     console.log('Rutas obtenidas:', this.rutas);
+
+    this.addMarkers();
+  }
+
+  async addMarkers() {
+    if (!this.rutas || !this.map) return;
+
+    for (const ruta of this.rutas) {
+      if (ruta.latitud && ruta.longitud) { 
+        await this.map.addMarker({
+          coordinate: {
+            lat: ruta.latitud,
+            lng: ruta.longitud,
+          },
+          title: ruta.nombre || 'Punto de ruta',
+          snippet: ruta.descripcion || '',
+        });
+      }
+    }
   }
 
   onServiceChange(serviceId: string) {
@@ -124,4 +137,3 @@ export class UserMapPage implements OnInit {
     this.getRutas(serviceId);
   }
 }
-
