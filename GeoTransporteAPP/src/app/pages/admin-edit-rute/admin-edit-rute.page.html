@@ -26,8 +26,17 @@
       <ion-input [(ngModel)]="newRuta.destino" required></ion-input>
     </ion-item>
   </ion-card>
-
-  <ion-button (click)="save()" expand="block" shape="round" [disabled]="cargando">
-    Guardar
-  </ion-button>
+  <div #map id="map" style="height: 400px; margin: 20px;"></div>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Paraderos Seleccionados</ion-card-title>
+    </ion-card-header>
+    <ion-list>
+      <ion-item *ngFor="let paradero of paraderos; let i = index">
+        <ion-input [(ngModel)]="paradero.nombre" placeholder="Nombre del paradero"></ion-input>
+        <ion-button color="danger" (click)="removeParadero(i)">Quitar</ion-button>
+      </ion-item>
+    </ion-list>
+  </ion-card>
+  <ion-button expand="block" (click)="save()">Guardar</ion-button>
 </ion-content>

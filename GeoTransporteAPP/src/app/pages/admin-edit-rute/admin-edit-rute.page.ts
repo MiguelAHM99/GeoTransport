@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
-import { RutaI } from 'src/app/models/rutas.models';
-import { FirestoreService } from 'src/app/services/firestore.service';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Firestore, doc, getDoc, setDoc, collection, getDocs, writeBatch, deleteDoc } from '@angular/fire/firestore';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
+import { GoogleMap } from '@capacitor/google-maps';
+import { environment } from 'src/environments/environment.prod';
+import { RutaI } from 'src/app/models/rutas.models';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
+import { FirestoreService } from 'src/app/services/firestore.service';
 
 @Component({
   selector: 'app-admin-edit-rute',
@@ -13,6 +15,9 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
 })
 export class AdminEditRutePage implements OnInit {
 
+  @ViewChild('map') mapRef: ElementRef;
+  map: GoogleMap;
+
   newRuta: RutaI = {
     id: '',
     nombre: '',
@@ -20,18 +25,20 @@ export class AdminEditRutePage implements OnInit {
     inicio: '',
     destino: ''
   };
-  cargando: boolean = false;
-  rutaId: string | null = null;
   selectedServicio: string;
+  rutaId: string | null = null;
+  cargando: boolean = false;
+  paraderos: any[] = [];
+  markers: Map<string, string> = new Map(); // Map to store marker references
 
   constructor(
-    private readonly firestoreService: FirestoreService,
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly alertController: AlertController,
     private readonly firestore: Firestore,
-    private readonly selectedServiceService: SelectedServiceService
-  ) { 
+    private readonly firestoreService: FirestoreService,
+    private readonly alertController: AlertController,
+    private readonly router: Router,
+    private readonly selectedServiceService: SelectedServiceService,
+    private readonly route: ActivatedRoute
+  ) {
     this.rutaId = this.route.snapshot.paramMap.get('id');
     this.selectedServicio = this.selectedServiceService.getSelectedService();
     if (this.rutaId) {
@@ -40,6 +47,41 @@ export class AdminEditRutePage implements OnInit {
   }
 
   ngOnInit() {}
+
+  ionViewDidEnter() {
+    this.createMap();
+  }
+
+  // Crear el mapa de Google
+  async createMap() {
+    this.map = await GoogleMap.create({
+      id: 'my-map',
+      element: this.mapRef.nativeElement,
+      apiKey: environment.mapsKey,
+      config: {
+        center: {
+          lat: -33.036,
+          lng: -71.62963,
+        },
+        zoom: 8,
+      },
+    });
+
+    // Añadir listener para seleccionar paraderos
+    this.map.setOnMapClickListener(async (event) => {
+      const { latitude, longitude } = event;
+      const paraderoId = doc(collection(this.firestore, 'dummy')).id; // Generar un ID genérico de Firebase
+      const markerId = await this.map.addMarker({
+        coordinate: {
+          lat: latitude,
+          lng: longitude,
+        },
+        title: 'Paradero',
+      });
+      this.paraderos.push({ id: paraderoId, markerId, lat: latitude, lng: longitude, nombre: 'Paradero' });
+      this.markers.set(paraderoId, markerId); // Store the marker reference
+    });
+  }
 
   // Obtener los datos de la ruta desde Firestore
   async getRuta(id: string) {
@@ -51,6 +93,20 @@ export class AdminEditRutePage implements OnInit {
 
     if (docSnap.exists()) {
       this.newRuta = docSnap.data() as RutaI;
+      // Cargar paraderos existentes
+      const paraderosSnapshot = await getDocs(collection(this.firestore, `Servicios/${this.selectedServicio}/rutas/${id}/paraderos`));
+      this.paraderos = paraderosSnapshot.docs.map(doc => doc.data());
+      // Añadir marcadores al mapa
+      for (const paradero of this.paraderos) {
+        const markerId = await this.map.addMarker({
+          coordinate: {
+            lat: paradero.lat,
+            lng: paradero.lng,
+          },
+          title: 'Paradero',
+        });
+        this.markers.set(paradero.id, markerId); // Store the marker reference
+      }
     } else {
       this.showAlert('Error', 'Ruta no encontrada.');
       this.router.navigate(['/admin-rute']);
@@ -68,18 +124,39 @@ export class AdminEditRutePage implements OnInit {
     await alert.present();
   }
 
-  // Guardar los datos de la ruta en Firestore
+  // Guardar los datos de la ruta y los paraderos en Firestore
   async save() {
     if (!this.validateInputs()) return; // Si la validación falla, detener el guardado.
+
     this.cargando = true;
+    const batch = writeBatch(this.firestore);
+
     if (this.rutaId) {
-      await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, this.rutaId), this.newRuta);
+      const rutaDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${this.rutaId}`);
+      batch.update(rutaDocRef, { ...this.newRuta });
     } else {
       this.newRuta.id = this.firestoreService.createIdDoc();
-      await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, this.newRuta.id), this.newRuta);
+      const rutaDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${this.newRuta.id}`);
+      batch.set(rutaDocRef, this.newRuta);
     }
-    this.cargando = false;
-    this.router.navigate(['/admin-rute'], { replaceUrl: true }); // Redirigir a la lista de rutas después de guardar
+
+    // Guardar los paraderos
+    const paraderoPromises = this.paraderos.map(paradero => {
+      const paraderoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${this.newRuta.id}/paraderos`, paradero.id);
+      return setDoc(paraderoDocRef, paradero);
+    });
+
+    await Promise.all(paraderoPromises);
+
+    try {
+      await batch.commit();
+      this.router.navigate(['/admin-rute'], { replaceUrl: true }); // Redirigir a la lista de rutas después de guardar
+    } catch (error) {
+      console.error('Error al guardar la ruta:', error);
+      this.showAlert('Error', 'Hubo un error al guardar la ruta. Por favor, inténtelo de nuevo.');
+    } finally {
+      this.cargando = false;
+    }
   }
 
   // Validar campos antes de guardar o editar
@@ -89,5 +166,21 @@ export class AdminEditRutePage implements OnInit {
       return false;
     }
     return true;
+  }
+
+  // Quitar un paradero de la lista
+  async removeParadero(index: number) {
+    const paraderoId = this.paraderos[index].id;
+    const markerId = this.markers.get(paraderoId);
+    if (markerId) {
+      await this.map.removeMarker(markerId); // Eliminar el marcador del mapa
+      this.markers.delete(paraderoId); // Eliminar la referencia del marcador
+    }
+    // Eliminar el paradero de Firestore si ya estaba en la colección
+    if (this.rutaId) {
+      const paraderoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${this.rutaId}/paraderos/${paraderoId}`);
+      await deleteDoc(paraderoDocRef);
+    }
+    this.paraderos.splice(index, 1); // Eliminar el paradero de la lista
   }
 }
