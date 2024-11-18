@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-button routerLink="/inicio">
@@ -9,17 +9,10 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-
   <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px;">
     <form (ngSubmit)="login()">
       <ion-item>
-        <ion-label position="floating">Servicio</ion-label>
-        <ion-select [(ngModel)]="selectedServicio" name="servicio" required>
-          <ion-select-option *ngFor="let servicio of servicios" [value]="servicio.id">{{ servicio.Nombre }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-label position="floating">Correo</ion-label>
+        <ion-label position="floating">Usuario</ion-label>
         <ion-input type="email" [(ngModel)]="correo" name="correo" required></ion-input>
       </ion-item>
       <ion-item>

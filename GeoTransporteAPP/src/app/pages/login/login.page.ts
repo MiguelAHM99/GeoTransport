@@ -12,8 +12,6 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
 export class LoginPage implements OnInit {
   correo: string;
   contrasenna: string;
-  selectedServicio: string;
-  servicios: any[] = [];
 
   constructor(
     private readonly firestore: Firestore,
@@ -22,31 +20,43 @@ export class LoginPage implements OnInit {
     private readonly selectedServiceService: SelectedServiceService
   ) {}
 
-  ngOnInit() {
-    this.loadServicios();
-  }
-
-  async loadServicios() {
-    const serviciosRef = collection(this.firestore, 'Servicios');
-    const querySnapshot = await getDocs(serviciosRef);
-    this.servicios = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  }
+  ngOnInit() {}
 
   async login() {
     try {
-      const usuariosRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
-      const q = query(usuariosRef, where('correo', '==', this.correo));
-      const querySnapshot = await getDocs(q);
+      // Obtener todos los servicios
+      const serviciosSnapshot = await getDocs(collection(this.firestore, 'Servicios'));
+      console.log('Servicios obtenidos:', serviciosSnapshot.docs.map(doc => doc.id));
+      let userFound = false;
+      let userData: any;
+      let userDocId: string;
+      let selectedServicio: string;
 
-      if (querySnapshot.empty) {
+      // Iterar sobre cada servicio y buscar al usuario
+      for (const servicioDoc of serviciosSnapshot.docs) {
+        const servicioId = servicioDoc.id;
+        console.log(`Buscando en servicio: ${servicioId}`);
+        const usuariosSnapshot = await getDocs(query(
+          collection(this.firestore, `Servicios/${servicioId}/usuarios`),
+          where('correo', '==', this.correo)
+        ));
+        console.log(`Usuarios encontrados en ${servicioId}:`, usuariosSnapshot.docs.map(doc => doc.id));
+
+        if (!usuariosSnapshot.empty) {
+          const userDoc = usuariosSnapshot.docs[0];
+          userData = userDoc.data();
+          userDocId = userDoc.id;
+          userFound = true;
+          selectedServicio = servicioId; // Almacenar el servicio encontrado
+          break;
+        }
+      }
+
+      if (!userFound) {
         console.error('Usuario no encontrado');
         alert('Usuario no encontrado');
         return;
       }
-
-      // Obtener el documento del usuario
-      const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data();
 
       // Verificar la contraseña
       if (userData['contrasenna'] !== this.contrasenna) {
@@ -58,16 +68,16 @@ export class LoginPage implements OnInit {
       console.log('Usuario autenticado:', userData);
 
       // Almacenar el ID del usuario autenticado en AuthService
-      this.authService.setCurrentUserId(userDoc.id);
+      this.authService.setCurrentUserId(userDocId);
       this.authService.setCurrentUserEmail(this.correo);
 
-      // Almacenar el servicio seleccionado
-      this.selectedServiceService.setSelectedService(this.selectedServicio);
+      // Almacenar el servicio seleccionado en SelectedServiceService
+      this.selectedServiceService.setSelectedService(selectedServicio);
 
       // Redirigir al usuario basado en su rol
       if (userData['socio']) {
-        console.log('Usuario es socio, redirigiendo a /admin-driver');
-        this.router.navigate(['/admin-driver']);
+        console.log('Usuario es socio, redirigiendo a /admin-panel');
+        this.router.navigate(['/admin-panel']);
       } else {
         console.log('Usuario no es socio, redirigiendo a /driver-map');
         this.router.navigate(['/driver-map']);

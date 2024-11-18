@@ -87,15 +87,20 @@ export class AdminEditDriverPage implements OnInit {
   async save() {
     if (!this.isFormValid()) return; // Si la validación falla, detener el guardado.
 
-    // Verificar si ya existe un conductor con el mismo correo
-    const conductoresRef = collection(this.firestore, `Servicios/${this.selectedServicio}/usuarios`);
-    const q = query(conductoresRef, where('correo', '==', this.newConductor.correo));
-    const querySnapshot = await getDocs(q);
+    // Verificar si ya existe un conductor con el mismo correo en cualquier servicio
+    const serviciosSnapshot = await getDocs(collection(this.firestore, 'Servicios'));
+    for (const servicioDoc of serviciosSnapshot.docs) {
+      const servicioId = servicioDoc.id;
+      const conductoresRef = collection(this.firestore, `Servicios/${servicioId}/usuarios`);
+      const q = query(conductoresRef, where('correo', '==', this.newConductor.correo));
+      const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty && !this.conductorId) {
-      this.showAlert('Error', 'Ya existe un conductor con este correo.');
-      return;
+      if (!querySnapshot.empty && (!this.conductorId || querySnapshot.docs[0].id !== this.conductorId)) {
+        this.showAlert('Error', 'Ya existe un conductor con este correo en otro servicio.');
+        return;
+      }
     }
+
 
     this.cargando = true;
     const batch = writeBatch(this.firestore);
@@ -153,42 +158,53 @@ export class AdminEditDriverPage implements OnInit {
       batch.set(conductorDocRef, this.newConductor);
       //El conductor almacena todos los datos de las tablas, pero solo utiliza el ID para consultar la tabla general del servicio
 
-      // Crear la subcolección de vehículos
-      const vehiculoPromises = this.selectedVehiculos.map(async vehiculoId => {
-        const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos`, vehiculoId);
-        const vehiculoDoc = await getDoc(vehiculoDocRef);
-        if (vehiculoDoc.exists()) {
-          const vehiculoData = vehiculoDoc.data() as VehiculoI;
-          const vehiculoToSave = {
-            id: vehiculoData.id,
-            nombre: vehiculoData.nombre,
-            patente: vehiculoData.patente
-          };
-          const vehiculoSubDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios/${this.newConductor.id}/vehiculos`, vehiculoId);
-          batch.set(vehiculoSubDocRef, vehiculoToSave);
-        }
-      });
+    // Crear la subcolección de vehículos
+    const vehiculoPromises = this.selectedVehiculos.map(async vehiculoId => {
+      const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos`, vehiculoId);
+      const vehiculoDoc = await getDoc(vehiculoDocRef);
+      if (vehiculoDoc.exists()) {
+        const vehiculoData = vehiculoDoc.data() as VehiculoI;
+        const vehiculoToSave = {
+          id: vehiculoData.id,
+          nombre: vehiculoData.nombre,
+          patente: vehiculoData.patente
+        };
+        const vehiculoSubDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios/${this.newConductor.id}/vehiculos`, vehiculoId);
+        batch.set(vehiculoSubDocRef, vehiculoToSave);
+      }
+    });
 
-      // Crear la subcolección de rutas
-      const rutaPromises = this.selectedRutas.map(async rutaId => {
-        const rutaDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, rutaId);
-        const rutaDoc = await getDoc(rutaDocRef);
-        if (rutaDoc.exists()) {
-          const rutaData = rutaDoc.data() as RutaI;
-          const rutaToSave = {
-            id: rutaData.id,
-            nombre: rutaData.nombre,
-            descripcion: rutaData.descripcion,
-            inicio: rutaData.inicio,
-            destino: rutaData.destino
-          };
-          const rutaSubDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios/${this.newConductor.id}/rutas`, rutaId);
-          batch.set(rutaSubDocRef, rutaToSave);
-        }
-      });
+    // Crear la subcolección de rutas
+    const rutaPromises = this.selectedRutas.map(async rutaId => {
+      const rutaDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, rutaId);
+      const rutaDoc = await getDoc(rutaDocRef);
+      if (rutaDoc.exists()) {
+        const rutaData = rutaDoc.data() as RutaI;
+        const rutaToSave = {
+          id: rutaData.id,
+          nombre: rutaData.nombre,
+          descripcion: rutaData.descripcion,
+          inicio: rutaData.inicio,
+          destino: rutaData.destino
+        };
+        const rutaSubDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios/${this.newConductor.id}/rutas`, rutaId);
+        batch.set(rutaSubDocRef, rutaToSave);
+      }
+    });
 
-      await Promise.all([...vehiculoPromises, ...rutaPromises]);
+    await Promise.all([...vehiculoPromises, ...rutaPromises]);
+
+    try {
+      await batch.commit();
+      this.router.navigate(['/admin-panel']);
+    } catch (error) {
+      console.error('Error al guardar el conductor:', error);
+      this.showAlert('Error', 'Hubo un error al guardar el conductor. Por favor, inténtelo de nuevo.');
+    } finally {
+      this.cargando = false;
     }
+  }
+
 
     await batch.commit();
     this.cargando = false;
