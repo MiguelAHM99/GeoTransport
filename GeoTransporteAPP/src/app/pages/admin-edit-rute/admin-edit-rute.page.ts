@@ -54,16 +54,51 @@ export class AdminEditRutePage implements OnInit {
 
   // Crear el mapa de Google
   async createMap() {
+    const mapStyles = [
+      {
+        featureType: 'poi',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'transit',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'road',
+        elementType: 'labels.icon',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'landscape',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative.locality',
+        elementType: 'labels.text',
+        stylers: [{ visibility: 'on' }],
+      },
+    ];
+
     this.map = await GoogleMap.create({
       id: 'my-map',
       element: this.mapRef.nativeElement,
-      apiKey: environment.mapsKey,
+      apiKey: environment.mapsKey, 
       config: {
         center: {
           lat: -33.036,
           lng: -71.62963,
         },
         zoom: 8,
+        styles: mapStyles, // Aplicar los estilos al mapa
+        streetViewControl: false, // Desactivar el Street View
       },
     });
 
