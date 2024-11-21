@@ -71,9 +71,26 @@ export class AdminDriverPage implements OnInit {
     await alert.present();
   }
 
-  // Navegar a la página de edición de conductores
-  edit(conductor: ConductorI) {
-    this.router.navigate(['/admin-edit-driver', conductor.id]);
+  // Confirmar edición de un conductor
+  async edit(conductor: ConductorI) {
+    const alert = await this.alertController.create({
+      header: 'Confirmar',
+      message: `¿Estás seguro de que deseas editar el conductor: ${conductor.correo}?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+        },
+        {
+          text: 'Confirmar',
+          handler: () => {
+            // Navegar a la página de edición si se confirma
+            this.router.navigate(['/admin-edit-driver', conductor.id]);
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   // Navegar a la página de creación de conductores

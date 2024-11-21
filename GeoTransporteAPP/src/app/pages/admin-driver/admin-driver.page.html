@@ -7,11 +7,11 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-  <ion-button (click)="create()" expand="block" class="styled-button">
-    Agregar Nuevo Conductor
-  </ion-button>
-<div class="card-container">
-  <ion-card *ngFor="let conductor of conductores">
+<div class="main-container">
+
+<ion-button (click)="create()" class="styled-button">Agregar Nuevo Conductor</ion-button>
+
+  <ion-card class="card-container" *ngFor="let conductor of conductores">
     <ion-item >
       <ion-label>
         Correo: {{conductor.correo}} <br>

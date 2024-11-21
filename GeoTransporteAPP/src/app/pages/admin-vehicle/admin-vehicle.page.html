@@ -6,15 +6,13 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" id="main-content">
+<ion-content [fullscreen]="true" >
+<div class="main-container">
 
 
-    <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-vehicle">
-      Agregar Nuevo Vehículo
-    </ion-button>
+    <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-vehicle">Agregar Nuevo Vehículo</ion-button>
 
-  <div class="card-container">
-    <ion-card *ngFor="let vehiculo of vehiculos">    
+    <ion-card class="card-container" *ngFor="let vehiculo of vehiculos">    
       <ion-item >
             <ion-label>
               Nombre: {{vehiculo.nombre}} <br>

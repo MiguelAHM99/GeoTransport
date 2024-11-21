@@ -6,13 +6,12 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" id="main-content">
-  <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-rute">
-    Agregar Nueva Ruta
-  </ion-button>
+<ion-content [fullscreen]="true" >
+<div class="main-container">
 
-<div class="card-container">
-  <ion-card  *ngFor="let ruta of rutas">
+  <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-rute">Agregar Nueva Ruta</ion-button>
+
+  <ion-card class="card-container" *ngFor="let ruta of rutas">
     <ion-item>
       <ion-label>
         Nombre: {{ruta.nombre}} <br>

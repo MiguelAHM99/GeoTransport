@@ -12,10 +12,10 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
   styleUrls: ['./admin-rute.page.scss'],
 })
 export class AdminRutePage implements OnInit {
-
   rutas: RutaI[] = [];
   cargando: boolean = false;
   selectedServicio: string;
+  newVehiculo: { nombre: string; patente: string } = { nombre: '', patente: '' };
 
   constructor(
     private readonly firestoreService: FirestoreService,
@@ -23,21 +23,22 @@ export class AdminRutePage implements OnInit {
     private readonly router: Router,
     private readonly firestore: Firestore,
     private readonly selectedServiceService: SelectedServiceService
-  ) { 
-    this.initRutas();
-  }
+  ) {}
 
   ngOnInit() {
     this.selectedServicio = this.selectedServiceService.getSelectedService();
     this.loadRutas();
   }
 
-  // Inicializar la lista de rutas
-  initRutas() {
-    this.rutas = [];
+  async showAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
   }
 
-  // Cargar la colección completa de rutas
   async loadRutas() {
     if (!this.selectedServicio) return;
 
@@ -52,28 +53,36 @@ export class AdminRutePage implements OnInit {
     this.cargando = false;
   }
 
-  // Editar una ruta existente
-  edit(ruta: RutaI) {
-    this.router.navigate(['/admin-edit-rute', ruta.id]);
+  async edit(ruta: RutaI) {
+    const alert = await this.alertController.create({
+      header: 'Confirmar',
+      message: `¿Estás seguro de que deseas editar el vehículo: ${ruta.nombre}?`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Confirmar', handler: () => {} }
+      ]
+    });
+
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+    if (role !== 'cancel') {
+      this.router.navigate(['/admin-edit-rute', ruta.id]);
+    }
   }
 
-  // Eliminar una ruta existente
   async delete(ruta: RutaI) {
     const alert = await this.alertController.create({
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas eliminar la ruta: ${ruta.nombre}?`,
       buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
+        { text: 'Cancelar', role: 'cancel' },
+        { 
           text: 'Confirmar',
           handler: async () => {
             this.cargando = true;
             await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, ruta.id));
             this.cargando = false;
-            this.loadRutas(); // Recargar la lista de rutas
+            this.loadRutas();
           }
         }
       ]

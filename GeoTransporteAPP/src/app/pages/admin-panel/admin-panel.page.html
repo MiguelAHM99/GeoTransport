@@ -10,11 +10,11 @@
 <ion-content class="main-container">
   <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filterHistorial()" placeholder="Filtrar historial"></ion-searchbar>
     <div class="card-container">
-      <ion-card *ngFor="let item of filteredHistorial" class="card-container">
+      <ion-card *ngFor="let item of filteredHistorial" class="card-container-center">
         <ion-card-header>
-          <ion-card-title>{{ item.timestamp?.toDate() | date: 'dd MMMM yyyy'}}</ion-card-title>
+          <ion-card-title class="title-center">{{ item.timestamp?.toDate() | date: 'dd MMMM yyyy'}}</ion-card-title>
         </ion-card-header>
-        <ion-card-content>
+        <ion-card-content class="title-center" >
           <p><strong>Estado:</strong> {{ item.estado }}</p>
           <p><strong>Conductor:</strong> {{ item.conductor }}</p>
           <p><strong>Vehículo:</strong> {{ item.nombreVehiculo }}</p>

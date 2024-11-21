@@ -22,6 +22,7 @@ export class LoginPage implements OnInit {
 
   ngOnInit() {}
 
+  // Función de login
   async login() {
     try {
       // Obtener todos los servicios
@@ -68,7 +69,7 @@ export class LoginPage implements OnInit {
       console.log('Usuario autenticado:', userData);
 
       // Almacenar el ID del usuario autenticado en AuthService
-      this.authService.setCurrentUserId(userDocId);
+      this.authService.setCurrentUserId(userDocId, selectedServicio);
       this.authService.setCurrentUserEmail(this.correo);
 
       // Almacenar el servicio seleccionado en SelectedServiceService
@@ -79,12 +80,12 @@ export class LoginPage implements OnInit {
         console.log('Usuario es socio, redirigiendo a /admin-panel');
         this.router.navigate(['/admin-panel']);
       } else {
-        console.log('Usuario no es socio, redirigiendo a /driver-map');
-        this.router.navigate(['/driver-map']);
+        console.error("No se pudo determinar el rol del usuario");
+        await this.router.navigate(['/login']);
       }
-    } catch (error) {
-      console.error('Error en el login:', error);
-      alert('Error en el login: ' + (error as Error).message);
+    } catch (error: any) { // Especifica el tipo del parámetro error
+      console.error("Error durante la autenticación:", error);
     }
   }
 }
+
