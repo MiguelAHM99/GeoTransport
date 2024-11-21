@@ -9,6 +9,7 @@ import { filter } from 'rxjs/operators';
 })
 export class AppComponent implements OnInit {
   showSidebar: boolean = false;
+  isModalOpen = false;
 
   constructor(private router: Router) {
     this.router.events.pipe(
@@ -20,10 +21,14 @@ export class AppComponent implements OnInit {
 
   ngOnInit() { }
 
+  setOpen(isOpen: boolean) {
+    this.isModalOpen = isOpen;
+  }
   closeMenu() {
     const menu = document.querySelector('ion-menu');
     if (menu) {
       menu.close();
     }
   }
+  
 }

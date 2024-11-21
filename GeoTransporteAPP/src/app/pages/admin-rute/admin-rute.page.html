@@ -11,8 +11,9 @@
     Agregar Nueva Ruta
   </ion-button>
 
-  <ion-card>
-    <ion-item *ngFor="let ruta of rutas">
+<div class="card-container">
+  <ion-card  *ngFor="let ruta of rutas">
+    <ion-item>
       <ion-label>
         Nombre: {{ruta.nombre}} <br>
         Descripción: {{ruta.descripcion}} <br>
@@ -25,8 +26,10 @@
       </ion-buttons>
     </ion-item>
   </ion-card>
-
+</div>
+<div class="card-container">
   <ion-text *ngIf="rutas.length === 0" color="medium" class="no-rutas">
     <p>No hay rutas disponibles.</p>
   </ion-text>
+</div>
 </ion-content>

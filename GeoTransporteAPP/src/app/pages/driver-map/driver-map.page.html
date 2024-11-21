@@ -11,10 +11,10 @@
 <ion-content [fullscreen]="true">
 
 
-  <div style="padding: 20px;">
-    <ion-item>
+  <div class="padding">
+    <ion-item >
       <ion-label>Seleccionar Ruta</ion-label>
-      <ion-select [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta" [disabled]="recorridoIniciado">
+      <ion-select class="end" [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta" [disabled]="recorridoIniciado">
         <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
       </ion-select>
     </ion-item>

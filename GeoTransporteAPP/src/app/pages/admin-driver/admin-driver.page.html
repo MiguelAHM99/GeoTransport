@@ -10,9 +10,9 @@
   <ion-button (click)="create()" expand="block" shape="round">
     Agregar Nuevo Conductor
   </ion-button>
-
-  <ion-card>
-    <ion-item *ngFor="let conductor of conductores">
+<div class="card-container">
+  <ion-card *ngFor="let conductor of conductores">
+    <ion-item >
       <ion-label>
         Correo: {{conductor.correo}} <br>
         Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
@@ -27,8 +27,12 @@
       </ion-buttons>
     </ion-item>
   </ion-card>
+</div>
 
+<div class="card-container">
   <ion-text *ngIf="conductores.length === 0" color="medium" class="no-conductores">
     <p>No hay conductores disponibles.</p>
   </ion-text>
+</div>
+
 </ion-content>

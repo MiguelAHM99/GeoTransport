@@ -13,8 +13,9 @@
       Agregar Nuevo Vehículo
     </ion-button>
 
-    <ion-card>    
-      <ion-item *ngFor="let vehiculo of vehiculos">
+  <div class="card-container">
+    <ion-card *ngFor="let vehiculo of vehiculos">    
+      <ion-item >
             <ion-label>
               Nombre: {{vehiculo.nombre}} <br>
               Patente: {{vehiculo.patente}} 
@@ -25,8 +26,10 @@
             </ion-buttons>
         </ion-item>
       </ion-card>
-
+  </div>
+  <div class="card-container">
     <ion-text *ngIf="vehiculos.length === 0" color="medium" class="no-vehiculos">
       <p>No hay vehículos disponibles.</p>
     </ion-text>
+  </div>
 </ion-content>

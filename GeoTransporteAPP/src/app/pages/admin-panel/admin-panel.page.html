@@ -7,11 +7,10 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content class="main-container">
   <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filterHistorial()" placeholder="Filtrar historial"></ion-searchbar>
-  <ion-list>
-    <ion-item *ngFor="let item of filteredHistorial">
-      <ion-card>
+    <div class="card-container">
+      <ion-card *ngFor="let item of filteredHistorial" class="card-container">
         <ion-card-header>
           <ion-card-title>{{ item.timestamp?.toDate() | date: 'dd MMMM yyyy'}}</ion-card-title>
         </ion-card-header>
@@ -22,6 +21,5 @@
           <p><strong>Patente:</strong> {{ item.patente }}</p>
         </ion-card-content>
       </ion-card>
-    </ion-item>
-  </ion-list>
+    </div>
 </ion-content>

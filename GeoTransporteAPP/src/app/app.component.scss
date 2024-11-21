@@ -1,3 +1,7 @@
+ion-list{
+  --background: transparent; /* Establece el fondo como transparente para que la imagen sea visible */
+
+}
 ion-menu ion-content {
   --background: var(--ion-item-background, var(--ion-background-color, #fff));
 }
@@ -117,3 +121,45 @@ ion-note {
 ion-item.selected {
   --color: var(--ion-color-primary);
 }
+
+/* Estilo para el boton footer */
+
+
+.footer {
+  position: fixed;  /* Fija el footer en la parte inferior */
+  bottom: 0;
+  width: 100%;  /* Asegura que el footer ocupe todo el ancho */
+  color: #003ea7;  /* Color azul como un enlace */
+  font-size: 14px;  /* Tamaño de fuente similar al de los enlaces */
+  text-decoration: underline;  /* Subraya el texto */
+  padding: 0;  /* Sin relleno extra */
+  margin: 0;  /* Sin margen extra */
+  height: auto;
+}
+
+.footer:hover {
+  text-decoration: none;  /* Elimina la subrayado cuando se pasa el ratón por encima */
+  opacity: 0.8;  /* Un pequeño efecto al pasar el ratón */
+}
+
+/*estilo para modal de politicas de empresa*/
+
+.policies{
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  height: 80%; 
+  padding: 80px;
+}
+
+.policies h3 {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+
+
+
+

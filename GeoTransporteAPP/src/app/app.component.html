@@ -29,7 +29,40 @@
     </ion-menu>
 
     <ion-router-outlet id="main-content"></ion-router-outlet>
+
+  
+  <ion-button class="footer" fill="clear" (click)="setOpen(true)" >Políticas de Empresa</ion-button>
+  <ion-modal [isOpen]="isModalOpen" >
+    <ng-template >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title >Políticas de Empresa</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="setOpen(false)">Cerrar</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="back-ground">
+        <div class="policies">
+          <h1>Reglas y Políticas de Empresa</h1>
+          <p>Bienvenido a las políticas de nuestra empresa. Aquí encontrarás nuestras reglas de conducta y otros lineamientos importantes para nuestros empleados.</p>
+          <h3>Al Crear un Usuario Conductor, considerar:</h3>
+          <ul>
+            <li>Regla 1: Crear Usuarios con Nomenclatura especial (ServicioSocioNombreApellidoConductor)</li>
+            <li>Regla 2: Seleccionar o Agregar Vehiculos  y Rutas que podra usar el conductor a crear.</li>
+            <li>Regla 3: No repetir tener nombres repetidos o duplicados, Para esto esta la Nomenclatura.</li>
+            <li>Regla 4: Cumplir con las normativas y Politicas.</li>
+            <li>Política 1: Privacidad de la información del cliente.</li>
+            <li>Política 2: Uso responsable de los recursos de la empresa.</li>
+          </ul>
+        </div>
+
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
   </ion-split-pane>
 
   <ion-router-outlet *ngIf="!showSidebar" id="main-content"></ion-router-outlet>
+
 </ion-app>
