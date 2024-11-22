@@ -51,25 +51,24 @@ ion-list {
   }
 }
 /* Contenedor principal */
-.main-container {
+.main-container- {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  height: 100vh; /* Asegura que ocupe toda la altura de la pantalla */
-}
-
-.main-container-center {
-  display: flex;
-  justify-content: center; /* Centra las tarjetas */
   flex-direction: column;
   align-items: center;
   padding: 20px;
   text-align: center;
-  height: 100px;             /* Define una altura específica */
-  line-height: 100px; 
+  height: 100vh; /* Asegura que ocupe toda la altura de la pantalla */
 }
 
+/* Contenedor principal */
+.main-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center;
+  padding: 20px;
+  height: 100vh; /* Asegura que ocupe toda la altura de la pantalla */
+}
   .title-center {
     text-align: center;        /* Centra horizontalmente */
   }

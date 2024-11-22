@@ -28,10 +28,10 @@
       </ion-select>
     </ion-item>
 
-    <ion-button *ngIf="!recorridoIniciado" (click)="iniciarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+    <ion-button *ngIf="!recorridoIniciado" class="styled-button" (click)="iniciarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Iniciar recorrido
     </ion-button>
-    <ion-button *ngIf="recorridoIniciado" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+    <ion-button *ngIf="recorridoIniciado" class="styled-button" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Finalizar recorrido
     </ion-button>
   </div>

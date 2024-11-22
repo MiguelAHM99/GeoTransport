@@ -1,3 +1,4 @@
+
 import { Component, OnInit } from '@angular/core';
 import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
@@ -22,7 +23,6 @@ export class LoginPage implements OnInit {
 
   ngOnInit() {}
 
-  // Función de login
   async login() {
     try {
       // Obtener todos los servicios
@@ -80,12 +80,12 @@ export class LoginPage implements OnInit {
         console.log('Usuario es socio, redirigiendo a /admin-panel');
         this.router.navigate(['/admin-panel']);
       } else {
-        console.error("No se pudo determinar el rol del usuario");
-        await this.router.navigate(['/login']);
+        console.log('Usuario no es socio, redirigiendo a /driver-map');
+        this.router.navigate(['/driver-map']);
       }
-    } catch (error: any) { // Especifica el tipo del parámetro error
-      console.error("Error durante la autenticación:", error);
+    } catch (error) {
+      console.error('Error en el login:', error);
+      alert('Error en el login: ' + (error as Error).message);
     }
   }
 }
-
