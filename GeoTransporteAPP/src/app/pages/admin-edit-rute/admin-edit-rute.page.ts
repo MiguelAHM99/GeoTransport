@@ -17,6 +17,7 @@ export class AdminEditRutePage implements OnInit {
 
   @ViewChild('map') mapRef: ElementRef;
   map: GoogleMap;
+  googleMapInstance: google.maps.Map; // Añadir una instancia de google.maps.Map
 
   newRuta: RutaI = {
     id: '',
@@ -29,7 +30,7 @@ export class AdminEditRutePage implements OnInit {
   rutaId: string | null = null;
   cargando: boolean = false;
   paraderos: any[] = [];
-  markers: Map<string, string> = new Map(); // Map to store marker references
+  markers: Map<string, google.maps.Marker> = new Map(); // Map to store marker references
 
   constructor(
     private readonly firestore: Firestore,
@@ -90,7 +91,7 @@ export class AdminEditRutePage implements OnInit {
     this.map = await GoogleMap.create({
       id: 'my-map',
       element: this.mapRef.nativeElement,
-      apiKey: environment.mapsKey, 
+      apiKey: environment.mapsKey,
       config: {
         center: {
           lat: -33.036,
@@ -102,20 +103,54 @@ export class AdminEditRutePage implements OnInit {
       },
     });
 
-    // Añadir listener para seleccionar paraderos
-    this.map.setOnMapClickListener(async (event) => {
-      const { latitude, longitude } = event;
-      const paraderoId = doc(collection(this.firestore, 'dummy')).id; // Generar un ID genérico de Firebase
-      const markerId = await this.map.addMarker({
-        coordinate: {
-          lat: latitude,
-          lng: longitude,
-        },
-        title: 'Paradero',
-      });
-      this.paraderos.push({ id: paraderoId, markerId, lat: latitude, lng: longitude, nombre: 'Paradero' });
-      this.markers.set(paraderoId, markerId); // Store the marker reference
+    // Obtener la instancia de google.maps.Map
+    this.googleMapInstance = new google.maps.Map(this.mapRef.nativeElement, {
+      center: { lat: -33.036, lng: -71.62963 },
+      zoom: 8,
+      styles: mapStyles,
+      streetViewControl: false,
     });
+
+    // Añadir listener para seleccionar paraderos
+    this.googleMapInstance.addListener('click', (event: google.maps.MapMouseEvent) => {
+      const latitude = event.latLng?.lat();
+      const longitude = event.latLng?.lng();
+      if (latitude !== undefined && longitude !== undefined) {
+        this.addParadero(latitude, longitude);
+      }
+    });
+  }
+
+  // Añadir un paradero al mapa y guardarlo en Firestore
+  async addParadero(latitude: number, longitude: number) {
+    const paraderoId = doc(collection(this.firestore, 'dummy')).id; // Generar un ID genérico de Firebase
+    const marker = new google.maps.Marker({
+      position: { lat: latitude, lng: longitude },
+      map: this.googleMapInstance,
+      title: 'Paradero',
+      icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
+    });
+    this.paraderos.push({ id: paraderoId, marker, lat: latitude, lng: longitude, nombre: 'Paradero' });
+    this.markers.set(paraderoId, marker); // Store the marker reference
+
+    // Añadir listener para mostrar el nombre del paradero
+    marker.addListener('click', () => {
+      const infoWindow = new google.maps.InfoWindow({
+        content: 'Paradero',
+      });
+      infoWindow.open(this.googleMapInstance, marker);
+    });
+
+    // Guardar el paradero en Firestore
+    if (this.rutaId) {
+      const paraderoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${this.rutaId}/paraderos/${paraderoId}`);
+      await setDoc(paraderoDocRef, {
+        id: paraderoId,
+        lat: latitude,
+        lng: longitude,
+        nombre: 'Paradero'
+      });
+    }
   }
 
   // Obtener los datos de la ruta desde Firestore
@@ -133,14 +168,21 @@ export class AdminEditRutePage implements OnInit {
       this.paraderos = paraderosSnapshot.docs.map(doc => doc.data());
       // Añadir marcadores al mapa
       for (const paradero of this.paraderos) {
-        const markerId = await this.map.addMarker({
-          coordinate: {
-            lat: paradero.lat,
-            lng: paradero.lng,
-          },
-          title: 'Paradero',
+        const marker = new google.maps.Marker({
+          position: { lat: paradero.lat, lng: paradero.lng },
+          map: this.googleMapInstance,
+          title: paradero.nombre || 'Paradero',
+          icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
         });
-        this.markers.set(paradero.id, markerId); // Store the marker reference
+        this.markers.set(paradero.id, marker); // Store the marker reference
+
+        // Añadir listener para mostrar el nombre del paradero
+        marker.addListener('click', () => {
+          const infoWindow = new google.maps.InfoWindow({
+            content: paradero.nombre || 'Paradero',
+          });
+          infoWindow.open(this.googleMapInstance, marker);
+        });
       }
     } else {
       this.showAlert('Error', 'Ruta no encontrada.');
@@ -206,9 +248,9 @@ export class AdminEditRutePage implements OnInit {
   // Quitar un paradero de la lista
   async removeParadero(index: number) {
     const paraderoId = this.paraderos[index].id;
-    const markerId = this.markers.get(paraderoId);
-    if (markerId) {
-      await this.map.removeMarker(markerId); // Eliminar el marcador del mapa
+    const marker = this.markers.get(paraderoId);
+    if (marker) {
+      marker.setMap(null); // Eliminar el marcador del mapa
       this.markers.delete(paraderoId); // Eliminar la referencia del marcador
     }
     // Eliminar el paradero de Firestore si ya estaba en la colección
