@@ -7,32 +7,27 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-<div class="main-container-">
+  <div class="main-container-">
+    <ion-button (click)="create()" class="styled-button">Agregar Nuevo Conductor</ion-button>
 
-<ion-button (click)="create()" class="styled-button">Agregar Nuevo Conductor</ion-button>
+    <ion-card class="card-container" *ngFor="let conductor of conductores">
+      <ion-item>
+        <ion-label>
+          Correo: {{conductor.correo}} <br>
+          Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
+          <ng-template #hiddenPassword>********</ng-template>
+        </ion-label>
+        <ion-buttons slot="end">
+          <ion-button (click)="togglePasswordVisibility(conductor.id)">
+            <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
+          </ion-button>
+          <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
+          <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
+        </ion-buttons>
+      </ion-item>
+    </ion-card>
+  </div>
 
-  <ion-card class="card-container" *ngFor="let conductor of conductores">
-    <ion-item >
-      <ion-label>
-        Correo: {{conductor.correo}} <br>
-        Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
-        <ng-template #hiddenPassword>********</ng-template>
-      </ion-label>
-      <ion-buttons slot="end">
-        <ion-button (click)="togglePasswordVisibility(conductor.id)">
-          <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
-        </ion-button>
-        <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
-        <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
-      </ion-buttons>
-    </ion-item>
-  </ion-card>
-</div>
-
-<div class="card-container">
-  <ion-text *ngIf="conductores.length === 0" color="medium" class="no-conductores">
-    <p>No hay conductores disponibles.</p>
-  </ion-text>
-</div>
-
+  <div class="card-container">
+  </div>
 </ion-content>

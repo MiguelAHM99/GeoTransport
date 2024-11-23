@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Firestore, collection, getDocs, query, orderBy } from '@angular/fire/firestore';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-panel',
@@ -15,12 +16,21 @@ export class AdminPanelPage implements OnInit {
 
   constructor(
     private readonly firestore: Firestore,
-    private readonly selectedServiceService: SelectedServiceService
+    private readonly selectedServiceService: SelectedServiceService,
+    private readonly router: Router
   ) {}
 
   ngOnInit() {
-    this.selectedServicio = this.selectedServiceService.getSelectedService();
-    this.loadHistorial();
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (loggedUser) {
+      this.selectedServicio = loggedUser.selectedServicio;
+      console.log('Usuario autenticado, servicio seleccionado:', this.selectedServicio);
+      this.loadHistorial();
+    } else {
+      // Redirigir al usuario a la página de login si no está autenticado
+      console.log('Usuario no autenticado, redirigiendo a login');
+      this.router.navigate(['/login']);
+    }
   }
 
   async loadHistorial() {
@@ -30,11 +40,10 @@ export class AdminPanelPage implements OnInit {
     }
 
     try {
-      const historialSnapshot = await getDocs(query(
-        collection(this.firestore, `Servicios/${this.selectedServicio}/historial`),
-        orderBy('timestamp', 'desc')
-      ));
-      this.historial = historialSnapshot.docs.map(doc => doc.data());
+      const historialRef = collection(this.firestore, `Servicios/${this.selectedServicio}/historial`);
+      const q = query(historialRef, orderBy('timestamp', 'desc'));
+      const querySnapshot = await getDocs(q);
+      this.historial = querySnapshot.docs.map(doc => doc.data());
       this.filteredHistorial = this.historial;
       console.log('Historial cargado:', this.historial);
     } catch (error) {
@@ -43,10 +52,8 @@ export class AdminPanelPage implements OnInit {
   }
 
   filterHistorial() {
-    this.filteredHistorial = this.historial.filter(item => {
-      return Object.values(item).some(val =>
-        String(val).toLowerCase().includes(this.searchTerm.toLowerCase())
-      );
-    });
+    this.filteredHistorial = this.historial.filter(item => 
+      item.conductor.toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
   }
 }

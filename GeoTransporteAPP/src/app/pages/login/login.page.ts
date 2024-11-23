@@ -1,4 +1,3 @@
-
 import { Component, OnInit } from '@angular/core';
 import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
@@ -74,6 +73,9 @@ export class LoginPage implements OnInit {
 
       // Almacenar el servicio seleccionado en SelectedServiceService
       this.selectedServiceService.setSelectedService(selectedServicio);
+
+      // Guardar la información del usuario en localStorage
+      localStorage.setItem('user', JSON.stringify({ userData, userDocId, selectedServicio }));
 
       // Redirigir al usuario basado en su rol
       if (userData['socio']) {

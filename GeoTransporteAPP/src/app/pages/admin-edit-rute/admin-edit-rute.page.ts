@@ -47,7 +47,19 @@ export class AdminEditRutePage implements OnInit {
     }
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (loggedUser) {
+      this.selectedServicio = loggedUser.selectedServicio;
+      this.rutaId = this.route.snapshot.paramMap.get('id');
+      if (this.rutaId) {
+        this.getRuta(this.rutaId);
+      }
+    } else {
+      // Redirigir al usuario a la página de login si no está autenticado
+      this.router.navigate(['/login']);
+    }
+  }
 
   ionViewDidEnter() {
     this.createMap();
