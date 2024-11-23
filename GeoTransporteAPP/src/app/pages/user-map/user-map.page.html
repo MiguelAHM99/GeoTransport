@@ -20,7 +20,6 @@
       <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
     </ion-select>
   </div>
-  <ion-button class="styled-button" style="padding: 20px;" (click)="UbicacionActual()">Obtener Posición Actual</ion-button>
 
   <p>{{ currentPosition }}</p>
   <div class="map-wrapper">
