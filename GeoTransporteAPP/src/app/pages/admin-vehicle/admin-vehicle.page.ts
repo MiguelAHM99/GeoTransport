@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { VehiculoI } from 'src/app/models/vehiculos.models';
 import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, query, where, getDocs, doc, getDoc } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
@@ -30,8 +30,14 @@ export class AdminVehiclePage implements OnInit {
   }
 
   ngOnInit() {
-    this.selectedServicio = this.selectedServiceService.getSelectedService();
-    this.loadVehiculos();
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (loggedUser) {
+      this.selectedServicio = loggedUser.selectedServicio;
+      this.loadVehiculos();
+    } else {
+      // Redirigir al usuario a la página de login si no está autenticado
+      this.router.navigate(['/login']);
+    }
   }
 
   // Cargar la colección completa de vehículos

@@ -19,7 +19,6 @@ export class AppComponent implements OnInit {
     private readonly firestorePersistence: FirestorePersistenceService
   ) 
   {
-    //this.authService.observeUserState();
     this.firestorePersistence.enablePersistence();
     this.router.events.pipe(
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)
@@ -29,27 +28,32 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || 'null');
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (loggedUser) {
       console.log('Usuario encontrado en localStorage:', loggedUser);
-      this.authService.setCurrentUserId(loggedUser.userId, loggedUser.servicio);
-      this.authService.setCurrentUserEmail(loggedUser.email);
-
-      // Redirigir al usuario basado en su rol
-      if (loggedUser.role === 'socio') {
-        this.router.navigate(['/admin-panel']);
-      }
+      this.authService.setCurrentUserId(loggedUser.userDocId, loggedUser.selectedServicio);
+      this.authService.setCurrentUserEmail(loggedUser.userData.correo);
+    } else {
+      // Redirigir al usuario a la página de login si no está autenticado
+      this.router.navigate(['/login']);
     }
-   }
-
-  setOpen(isOpen: boolean) {
-    this.isModalOpen = isOpen;
   }
+
   closeMenu() {
     const menu = document.querySelector('ion-menu');
     if (menu) {
       menu.close();
     }
   }
-  
+
+  logoutAndGoHome() {
+    // Eliminar el usuario de localStorage
+    localStorage.removeItem('user');
+    // Redirigir al usuario a la página de inicio
+    this.router.navigate(['/inicio']);
+  }
+
+  setOpen(isOpen: boolean) {
+    this.isModalOpen = isOpen;
+  }
 }

@@ -26,17 +26,14 @@ export class AdminRutePage implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.selectedServicio = this.selectedServiceService.getSelectedService();
-    this.loadRutas();
-  }
-
-  async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK']
-    });
-    await alert.present();
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (loggedUser) {
+      this.selectedServicio = loggedUser.selectedServicio;
+      this.loadRutas();
+    } else {
+      // Redirigir al usuario a la página de login si no está autenticado
+      this.router.navigate(['/login']);
+    }
   }
 
   async loadRutas() {
@@ -56,7 +53,7 @@ export class AdminRutePage implements OnInit {
   async edit(ruta: RutaI) {
     const alert = await this.alertController.create({
       header: 'Confirmar',
-      message: `¿Estás seguro de que deseas editar el vehículo: ${ruta.nombre}?`,
+      message: `¿Estás seguro de que deseas editar la ruta: ${ruta.nombre}?`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         { text: 'Confirmar', handler: () => {} }
@@ -65,6 +62,8 @@ export class AdminRutePage implements OnInit {
 
     await alert.present();
     const { role } = await alert.onDidDismiss();
+
+    // Si el usuario confirma la edición, navegamos a la página de edición
     if (role !== 'cancel') {
       this.router.navigate(['/admin-edit-rute', ruta.id]);
     }
@@ -75,17 +74,29 @@ export class AdminRutePage implements OnInit {
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas eliminar la ruta: ${ruta.nombre}?`,
       buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        { 
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+        },
+        {
           text: 'Confirmar',
           handler: async () => {
             this.cargando = true;
-            await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/rutas`, ruta.id));
+            await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/rutas/${ruta.id}`));
             this.cargando = false;
-            this.loadRutas();
+            this.loadRutas(); // Recargar la lista de rutas
           }
         }
       ]
+    });
+    await alert.present();
+  }
+
+  async showAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
     });
     await alert.present();
   }

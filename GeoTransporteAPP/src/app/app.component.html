@@ -21,13 +21,12 @@
             <ion-label>Historial</ion-label>
           </ion-item>
         </ion-list>
-        <ion-button class="styled-button" routerLink="/inicio" style="margin-top: 20px;" (click)="closeMenu()">
+        <ion-button class="styled-button" routerLink="/inicio" style="margin-top: 20px;" (click)="logoutAndGoHome()">
           <ion-icon slot="start" name="arrow-back"></ion-icon>
           Volver a Inicio
         </ion-button>
       </ion-content>
     </ion-menu>
-
     <ion-router-outlet id="main-content"></ion-router-outlet>
 
   

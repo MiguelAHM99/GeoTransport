@@ -3,7 +3,7 @@ import { VehiculoI } from 'src/app/models/vehiculos.models';
 import { FirestoreService } from 'src/app/services/firestore.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { Firestore, doc, getDoc, setDoc, collection, getDocs, query, where } from '@angular/fire/firestore';
+import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 
 @Component({
@@ -29,69 +29,49 @@ export class AdminEditVehiclePage implements OnInit {
     private readonly alertController: AlertController,
     private readonly firestore: Firestore,
     private readonly selectedServiceService: SelectedServiceService
-  ) { 
-    this.vehiculoId = this.route.snapshot.paramMap.get('id');
-    this.selectedServicio = this.selectedServiceService.getSelectedService();
-    if (this.vehiculoId) {
-      this.getVehiculo(this.vehiculoId);
-    }
-  }
+  ) {}
 
-  ngOnInit() {}
-
-  // Obtener los datos del vehículo desde Firestore
-  async getVehiculo(id: string) {
-    if (!this.selectedServicio) return;
-
-    this.cargando = true;
-    const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos/${id}`);
-    const docSnap = await getDoc(vehiculoDocRef);
-
-    if (docSnap.exists()) {
-      this.newVehiculo = docSnap.data() as VehiculoI;
+  ngOnInit() {
+    const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (loggedUser) {
+      this.selectedServicio = loggedUser.selectedServicio;
+      this.vehiculoId = this.route.snapshot.paramMap.get('id');
+      if (this.vehiculoId) {
+        this.loadVehiculo();
+      }
     } else {
-      this.showAlert('Error', 'Vehículo no encontrado.');
-      this.router.navigate(['/admin-vehicle']);
+      // Redirigir al usuario a la página de login si no está autenticado
+      this.router.navigate(['/login']);
     }
-    this.cargando = false;
   }
 
-  // Mostrar un alert de error
-  async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK']
-    });
-    await alert.present();
+  // Cargar los datos del vehículo
+  async loadVehiculo() {
+    if (!this.selectedServicio || !this.vehiculoId) return;
+
+    const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos/${this.vehiculoId}`);
+    const vehiculoDoc = await getDoc(vehiculoDocRef);
+    if (vehiculoDoc.exists()) {
+      this.newVehiculo = vehiculoDoc.data() as VehiculoI;
+      this.newVehiculo.id = vehiculoDoc.id;
+    } else {
+      console.error('Vehículo no encontrado');
+    }
   }
 
-  // Guardar los datos del vehículo en Firestore
+  // Guardar los cambios del vehículo en Firestore
   async save() {
     if (!this.validateInputs()) return; // Si la validación falla, detener el guardado.
-
-    // Verificar si ya existe un vehículo con la misma patente
-    const vehiculosRef = collection(this.firestore, `Servicios/${this.selectedServicio}/vehiculos`);
-    const q = query(vehiculosRef, where('patente', '==', this.newVehiculo.patente));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      this.showAlert('Error', 'Ya existe un vehículo con esta patente.');
-      return;
-    }
-
     this.cargando = true;
-    if (this.vehiculoId) {
-      await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos`, this.vehiculoId), this.newVehiculo);
-    } else {
-      this.newVehiculo.id = this.firestoreService.createIdDoc();
-      await setDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos`, this.newVehiculo.id), this.newVehiculo);
-    }
+    const vehiculoDocRef = doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos/${this.newVehiculo.id}`);
+    await setDoc(vehiculoDocRef, this.newVehiculo);
     this.cargando = false;
-    this.router.navigate(['/admin-vehicle']); // Redirigir a la lista de vehículos después de guardar
+
+    // Mostrar mensaje de éxito y redirigir
+    this.showAlert('Éxito', 'Vehículo actualizado correctamente');
+    this.router.navigate(['/admin-vehicle']);
   }
 
-  // Validar campos antes de guardar o editar
   validateInputs(): boolean {
     if (!this.newVehiculo.nombre || !this.newVehiculo.patente) {
       this.showAlert('Error', 'Por favor completa todos los campos');
@@ -116,5 +96,15 @@ export class AdminEditVehiclePage implements OnInit {
     const input = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const formatted = input.slice(0, 2) + (input.length > 2 ? '-' : '') + input.slice(2, 4) + (input.length > 4 ? '-' : '') + input.slice(4, 6);
     this.newVehiculo.patente = formatted;
+  }
+
+  // Mostrar un alert de error o éxito
+  async showAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
   }
 }

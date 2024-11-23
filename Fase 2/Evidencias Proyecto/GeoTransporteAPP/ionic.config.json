@@ -1,7 +1,0 @@
-{
-  "name": "GeoTransporteAPP",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "angular"
-}
