@@ -9,6 +9,11 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
+
+  <div class="map-wrapper">
+    <div #map class="map-container"></div>
+  </div>
+
   <div style="padding: 20px;">
     <ion-select placeholder="Seleccionar Servicio" (ionChange)="onServiceChange($event.detail.value)">
       <ion-select-option *ngFor="let service of services" [value]="service.id">{{ service.Nombre }}</ion-select-option>
@@ -22,7 +27,4 @@
   </div>
 
   <p>{{ currentPosition }}</p>
-  <div class="map-wrapper">
-    <div #map class="map-container" style="height: 400px; margin: 20px;"></div>
-  </div>
 </ion-content>

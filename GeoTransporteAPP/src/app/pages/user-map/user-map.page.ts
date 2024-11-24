@@ -10,193 +10,162 @@ import { environment } from 'src/environments/environment.prod';
   styleUrls: ['./user-map.page.scss'],
 })
 export class UserMapPage implements OnInit {
-
-  @ViewChild('map') mapRef: ElementRef;
-  map: GoogleMap;
-  googleMapInstance: google.maps.Map;
-
+  @ViewChild('map', { static: false }) mapRef!: ElementRef;
+  map!: GoogleMap;
   currentPosition: string = 'Esperando posición...';
-  currentMarker: google.maps.Marker | null = null;
-  watchId: string | null = null; // Para almacenar el ID del watcher
+  currentMarker: any = null;
+  watchId: string | null = null;
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
   selectedRuta: string = '';
-  paraderoMarkers: google.maps.Marker[] = [];
+  paraderoMarkers: any[] = [];
 
-  constructor(private readonly firestore: Firestore) { }
+  constructor(private readonly firestore: Firestore) {}
 
-  ionViewDidEnter() {
-    this.createMap(); // Crear el mapa al entrar en la vista
+  // Inicializa datos al cargar el componente
+  async ngOnInit() {
+    await this.getServices(); // Obtiene la lista de servicios
   }
 
+  // Crea el mapa al entrar en la vista
+  async ionViewDidEnter() {
+    await this.createMap();
+  }
+
+  // Limpia recursos al salir de la vista
   ionViewDidLeave() {
-    // Detener el seguimiento al salir de la vista
     if (this.watchId) {
       Geolocation.clearWatch({ id: this.watchId });
       this.watchId = null;
     }
   }
 
-  async ngOnInit() {
-    await this.getServices(); // Cargar los servicios disponibles
-  }
-
+  // Crea el mapa con la configuración deseada
   async createMap() {
     const mapStyles = [
-      {
-        featureType: 'poi',
-        elementType: 'all',
-        stylers: [{ visibility: 'off' }],
-      },
-      {
-        featureType: 'transit',
-        elementType: 'all',
-        stylers: [{ visibility: 'off' }],
-      },
-      {
-        featureType: 'road',
-        elementType: 'labels.icon',
-        stylers: [{ visibility: 'off' }],
-      },
-      {
-        featureType: 'administrative',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }],
-      },
-      {
-        featureType: 'landscape',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }],
-      },
-      {
-        featureType: 'administrative.locality',
-        elementType: 'labels.text',
-        stylers: [{ visibility: 'on' }],
-      },
+      { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
+      { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+      { featureType: 'administrative', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'landscape', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'administrative.locality', elementType: 'labels.text', stylers: [{ visibility: 'on' }] },
     ];
 
-    // Crear el mapa con configuraciones predeterminadas
     this.map = await GoogleMap.create({
-      id: 'my-map',
-      element: this.mapRef.nativeElement,
-      apiKey: environment.mapsKey,
+      id: 'my-map', // Identificador único para el mapa
+      element: this.mapRef.nativeElement, // Elemento del DOM donde se renderizará el mapa
+      apiKey: environment.mapsKey, // Clave de la API de Google Maps
       config: {
-        center: { lat: -33.036, lng: -71.62963 },
-        zoom: 8,
+        center: { lat: -33.036, lng: -71.62963 }, // Coordenadas iniciales
+        zoom: 8, // Nivel de zoom inicial
         styles: mapStyles,
         streetViewControl: false,
       },
     });
 
-    // Obtener la instancia de google.maps.Map
-    this.googleMapInstance = new google.maps.Map(this.mapRef.nativeElement, {
-      center: { lat: -33.036, lng: -71.62963 },
-      zoom: 8,
-      styles: mapStyles,
-      streetViewControl: false,
-    });
-
-    // Llamar a la función para establecer la ubicación inicial
-    await this.setInitialLocation();
-
-    // Iniciar el seguimiento de ubicación
-    this.startWatchingPosition();
+    await this.setInitialLocation(); // Centra el mapa en la posición inicial
+    this.startWatchingPosition(); // Inicia el seguimiento de ubicación
   }
 
+  // Establece la ubicación inicial del usuario
   async setInitialLocation() {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       const { latitude, longitude } = coordinates.coords;
-
-      // Actualizar la posición actual
+  
       this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
-
-      // Centrar el mapa en la ubicación del usuario
-      this.googleMapInstance.setCenter({ lat: latitude, lng: longitude });
-      this.googleMapInstance.setZoom(15);
-
-      // Crear un marcador en la ubicación actual
-      this.updateMarker(latitude, longitude);
+      await this.map.setCamera({
+        coordinate: { lat: latitude, lng: longitude }, // Cambiar nombres de propiedades
+        zoom: 15,
+      });
+  
+      this.updateMarker(latitude, longitude); // Actualiza o crea el marcador
     } catch (error) {
       console.error('Error al obtener la ubicación inicial:', error);
     }
   }
 
+  // Inicia el seguimiento continuo de la posición del usuario
   startWatchingPosition() {
     Geolocation.watchPosition(
-      {enableHighAccuracy: true},
+      { enableHighAccuracy: true },
       (position, err) => {
         if (err) {
           console.error('Error al rastrear posición:', err);
           return;
         }
+
         if (position) {
           const { latitude, longitude } = position.coords;
-  
-          // Actualizar la posición actual
+
           this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
-  
-          // Actualizar el marcador y centrar el mapa en la nueva posición
-          this.updateMarker(latitude, longitude);
+          this.updateMarker(latitude, longitude); // Actualiza el marcador en tiempo real
         }
       }
     ).then(watchId => {
-      this.watchId = watchId; // Asignar el ID del watcher
+      this.watchId = watchId;
     });
   }
-  updateMarker(latitude: number, longitude: number) {
-    throw new Error('Method not implemented.');
+
+  // Agrega o actualiza el marcador en el mapa
+  async updateMarker(lat: number, lng: number) {
+    if (this.currentMarker) {
+      await this.currentMarker.setPosition({ lat, lng });
+    } else {
+      this.currentMarker = await this.map.addMarker({
+        coordinate: { lat, lng }, // Cambiar nombres de propiedades
+        title: 'Mi ubicación actual',
+      });
+    }
   }
 
+  // Obtiene la lista de servicios desde Firestore
   async getServices() {
     const servicesRef = collection(this.firestore, 'Servicios');
     const querySnapshot = await getDocs(servicesRef);
     this.services = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
+  // Obtiene las rutas de un servicio seleccionado
   async getRutas(serviceId: string) {
     const rutasRef = collection(this.firestore, `Servicios/${serviceId}/rutas`);
     const querySnapshot = await getDocs(rutasRef);
     this.rutas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
+  // Obtiene los paraderos de una ruta seleccionada
   async getParaderos(rutaId: string) {
     const paraderosRef = collection(this.firestore, `Servicios/${this.selectedService}/rutas/${rutaId}/paraderos`);
     const querySnapshot = await getDocs(paraderosRef);
     const paraderos = querySnapshot.docs.map(doc => doc.data());
-
+  
+    // Limpia los marcadores existentes
     for (const marker of this.paraderoMarkers) {
-      marker.setMap(null);
+      marker.remove();
     }
     this.paraderoMarkers = [];
-
+  
+    // Agrega nuevos marcadores
     for (const paradero of paraderos) {
-      const marker = new google.maps.Marker({
-        position: { lat: paradero['lat'], lng: paradero['lng'] },
-        map: this.googleMapInstance,
+      const marker = await this.map.addMarker({
+        coordinate: { lat: paradero['lat'], lng: paradero['lng'] }, // Cambiar nombres de propiedades
         title: paradero['nombre'] || 'Paradero',
-        icon: 'assets/icon/bus-stop.png',
+        iconUrl: 'assets/icon/bus-stop.png',
       });
       this.paraderoMarkers.push(marker);
-
-      marker.addListener('click', () => {
-        const infoWindow = new google.maps.InfoWindow({
-          content: paradero['nombre'] || 'Paradero',
-        });
-        infoWindow.open(this.googleMapInstance, marker);
-      });
     }
   }
 
+  // Maneja el cambio de servicio
   onServiceChange(serviceId: string) {
     this.selectedService = serviceId;
     this.getRutas(serviceId);
   }
 
+  // Maneja el cambio de ruta
   onRutaChange(rutaId: string) {
     this.selectedRuta = rutaId;
     this.getParaderos(rutaId);
   }
 }
-
