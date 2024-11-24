@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { Firestore, collection, getDocs } from '@angular/fire/firestore';
 import { Geolocation } from '@capacitor/geolocation';
 import { GoogleMap } from '@capacitor/google-maps';
@@ -9,17 +9,17 @@ import { environment } from 'src/environments/environment.prod';
   templateUrl: './user-map.page.html',
   styleUrls: ['./user-map.page.scss'],
 })
-export class UserMapPage implements OnInit {
+export class UserMapPage implements OnInit, OnDestroy {
   @ViewChild('map', { static: false }) mapRef!: ElementRef;
   map!: GoogleMap;
   currentPosition: string = 'Esperando posición...';
   currentMarker: any = null;
-  watchId: string | null = null;
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
   selectedRuta: string = '';
   paraderoMarkers: any[] = [];
+  positionInterval: any; // Variable para almacenar el intervalo
 
   constructor(private readonly firestore: Firestore) {}
 
@@ -35,9 +35,9 @@ export class UserMapPage implements OnInit {
 
   // Limpia recursos al salir de la vista
   ionViewDidLeave() {
-    if (this.watchId) {
-      Geolocation.clearWatch({ id: this.watchId });
-      this.watchId = null;
+    if (this.positionInterval) {
+      clearInterval(this.positionInterval);
+      this.positionInterval = null;
     }
   }
 
@@ -73,13 +73,15 @@ export class UserMapPage implements OnInit {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       const { latitude, longitude } = coordinates.coords;
-  
+
+      console.log('Coordenadas obtenidas:', latitude, longitude); // Depuración
+
       this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
       await this.map.setCamera({
-        coordinate: { lat: latitude, lng: longitude }, // Cambiar nombres de propiedades
+        coordinate: { lat: latitude, lng: longitude },
         zoom: 15,
       });
-  
+
       this.updateMarker(latitude, longitude); // Actualiza o crea el marcador
     } catch (error) {
       console.error('Error al obtener la ubicación inicial:', error);
@@ -88,38 +90,52 @@ export class UserMapPage implements OnInit {
 
   // Inicia el seguimiento continuo de la posición del usuario
   startWatchingPosition() {
-    Geolocation.watchPosition(
-      { enableHighAccuracy: true },
-      (position, err) => {
-        if (err) {
-          console.error('Error al rastrear posición:', err);
-          return;
-        }
+    // Usamos setInterval para actualizar la posición cada 3 segundos
+    this.positionInterval = setInterval(async () => {
+      try {
+        const position = await Geolocation.getCurrentPosition();
+        const { latitude, longitude } = position.coords;
 
-        if (position) {
-          const { latitude, longitude } = position.coords;
-
-          this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
-          this.updateMarker(latitude, longitude); // Actualiza el marcador en tiempo real
-        }
+        this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
+        this.updateMarker(latitude, longitude); // Actualiza el marcador en tiempo real
+      } catch (err) {
+        console.error('Error al rastrear posición:', err);
       }
-    ).then(watchId => {
-      this.watchId = watchId;
-    });
+    }, 3000); // Actualizar cada 3 segundos
   }
 
   // Agrega o actualiza el marcador en el mapa
-  async updateMarker(lat: number, lng: number) {
-    if (this.currentMarker) {
+async updateMarker(lat: number, lng: number) {
+  console.log('currentMarker al principio:', this.currentMarker); // Verificar el valor de currentMarker
+
+  if (this.currentMarker) {
+    console.log('Marcador existente:', this.currentMarker); // Depuración: Ver el objeto del marcador
+
+    // Verifica si currentMarker tiene el método setPosition
+    if (typeof this.currentMarker.setPosition === 'function') {
       await this.currentMarker.setPosition({ lat, lng });
     } else {
+      console.error('El marcador no tiene el método setPosition.');
+    }
+  } else {
+    console.log('Creando un nuevo marcador...');
+    try {
+      // Crea un nuevo marcador si no existe
       this.currentMarker = await this.map.addMarker({
-        coordinate: { lat, lng }, // Cambiar nombres de propiedades
+        coordinate: { lat, lng },
         title: 'Mi ubicación actual',
       });
+      console.log('Marcador creado:', this.currentMarker); // Depuración: Ver el marcador creado
+
+      // Verifica si el marcador se creó correctamente
+      if (!this.currentMarker || typeof this.currentMarker.setPosition !== 'function') {
+        console.error('Error: el marcador no se creó correctamente.');
+      }
+    } catch (error) {
+      console.error('Error al crear el marcador:', error);
     }
   }
-
+}
   // Obtiene la lista de servicios desde Firestore
   async getServices() {
     const servicesRef = collection(this.firestore, 'Servicios');
@@ -149,7 +165,7 @@ export class UserMapPage implements OnInit {
     // Agrega nuevos marcadores
     for (const paradero of paraderos) {
       const marker = await this.map.addMarker({
-        coordinate: { lat: paradero['lat'], lng: paradero['lng'] }, // Cambiar nombres de propiedades
+        coordinate: { lat: paradero['lat'], lng: paradero['lng'] },
         title: paradero['nombre'] || 'Paradero',
         iconUrl: 'assets/icon/bus-stop.png',
       });
@@ -168,4 +184,15 @@ export class UserMapPage implements OnInit {
     this.selectedRuta = rutaId;
     this.getParaderos(rutaId);
   }
+
+  // Limpia el intervalo cuando el componente se destruye
+  ngOnDestroy() {
+    if (this.positionInterval) {
+      clearInterval(this.positionInterval);
+      this.positionInterval = null;
+    }
+  }
 }
+
+
+

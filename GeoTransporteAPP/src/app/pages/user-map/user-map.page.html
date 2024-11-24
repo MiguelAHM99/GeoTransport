@@ -10,10 +10,6 @@
 
 <ion-content [fullscreen]="true">
 
-  <div class="map-wrapper">
-    <div #map class="map-container"></div>
-  </div>
-
   <div style="padding: 20px;">
     <ion-select placeholder="Seleccionar Servicio" (ionChange)="onServiceChange($event.detail.value)">
       <ion-select-option *ngFor="let service of services" [value]="service.id">{{ service.Nombre }}</ion-select-option>
@@ -24,6 +20,10 @@
     <ion-select placeholder="Seleccionar Ruta" (ionChange)="onRutaChange($event.detail.value)">
       <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
     </ion-select>
+  </div>
+
+  <div class="map-wrapper">
+    <div #map id="my-map" style="height: 100%; width: 100%;"></div>
   </div>
 
   <p>{{ currentPosition }}</p>
