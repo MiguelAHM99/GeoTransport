@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { Firestore, collection, getDocs, doc, getDoc, setDoc } from '@angular/fire/firestore';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Firestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc } from '@angular/fire/firestore';
+import { Geolocation } from '@capacitor/geolocation';
+import { GoogleMap } from '@capacitor/google-maps';
+import { environment } from 'src/environments/environment.prod';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 import { AuthService } from 'src/app/services/auth.service';
 
@@ -8,22 +11,42 @@ import { AuthService } from 'src/app/services/auth.service';
   templateUrl: './driver-map.page.html',
   styleUrls: ['./driver-map.page.scss'],
 })
-export class DriverMapPage implements OnInit {
+export class DriverMapPage implements OnInit, OnDestroy {
+
+  @ViewChild('map') mapRef: ElementRef;
+  map: GoogleMap;
+  googleMapInstance: google.maps.Map; // Añadir una instancia de google.maps.Map
+
+  currentPosition: string = 'Esperando posición...';
+  currentMarker: google.maps.Marker | null = null;
+  watchId: string | null = null; // Almacena el ID del watcher para detenerlo cuando sea necesario
+  services: any[] = [];
+  selectedService: string = '';
   rutas: any[] = [];
-  vehiculos: any[] = [];
-  selectedRuta: string;
-  selectedVehiculo: string;
+  selectedRuta: string = '';
+  paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
+  positionInterval: any; // Variable para almacenar el intervalo
+  ubicacionDocRef: any; // Variable para almacenar la referencia del primer documento de ubicación
+  recorridoId: string; // Variable para almacenar el ID del recorrido
+
+  recorridoIniciado: boolean = false; 
   serviceId: string;
   conductorId: string;
   conductorCorreo: string;
-  cargando: boolean = false;
-  recorridoIniciado: boolean = false; 
+  vehiculos: any[] = []; // Añadir array para almacenar los vehículos
+  selectedVehiculo: string = ''; // Añadir variable para almacenar el vehículo seleccionado
 
   constructor(
     private readonly firestore: Firestore,
     private readonly selectedServiceService: SelectedServiceService,
     private readonly authService: AuthService
   ) {}
+
+  ionViewDidEnter(){
+    this.loadGoogleMaps().then(() => {
+      this.createMap();
+    });
+  }
 
   async ngOnInit() {
     console.log('DriverMapPage inicializado');
@@ -35,6 +58,102 @@ export class DriverMapPage implements OnInit {
     console.log(`Correo del conductor obtenido: ${this.conductorCorreo}`);
     await this.getRutas();
     await this.getVehiculos();
+  }
+
+  loadGoogleMaps(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+      } else {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.mapsKey}`;
+        script.onload = () => {
+          resolve();
+        };
+        document.head.appendChild(script);
+      }
+    });
+  }
+
+  async createMap() {
+    const mapStyles = [
+      {
+        featureType: 'poi',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'transit',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'road',
+        elementType: 'labels.icon',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'landscape',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative.locality',
+        elementType: 'labels.text',
+        stylers: [{ visibility: 'on' }],
+      },
+    ];
+
+    // Crear el mapa de Google usando Capacitor Google Maps
+    this.map = await GoogleMap.create({
+      id: 'my-map',
+      element: this.mapRef.nativeElement,
+      apiKey: environment.mapsKey,
+      config: {
+        center: { lat: -33.036, lng: -71.62963 },
+        zoom: 8,
+        styles: mapStyles,
+        streetViewControl: false,
+      },
+    });
+
+    // Obtener la instancia de google.maps.Map
+    this.googleMapInstance = new google.maps.Map(this.mapRef.nativeElement, {
+      center: { lat: -33.036, lng: -71.62963 },
+      zoom: 8,
+      styles: mapStyles,
+      streetViewControl: false,
+    });
+
+    // Obtener la ubicación actual del usuario
+    const coordinates = await Geolocation.getCurrentPosition();
+    this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
+    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
+    this.googleMapInstance.setZoom(15);
+
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
+    }
+
+    this.currentMarker = new google.maps.Marker({
+      position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
+      map: this.googleMapInstance,
+      title: 'Mi ubicación',
+      icon: 'assets/icon/car.png', // URL del icono azul para la ubicación del usuario
+    });
+  }
+
+  async getServices() {
+    console.log('Obteniendo servicios...');
+    const servicesRef = collection(this.firestore, 'Servicios');
+    const querySnapshot = await getDocs(servicesRef);
+    this.services = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('Servicios obtenidos:', this.services);
   }
 
   async getRutas() {
@@ -52,16 +171,11 @@ export class DriverMapPage implements OnInit {
       this.rutas = await Promise.all(rutaIds.map(async id => {
         const rutaDocRef = doc(this.firestore, `Servicios/${this.serviceId}/rutas/${id}`);
         const rutaDoc = await getDoc(rutaDocRef);
-        if (rutaDoc.exists()) {
-          const data = rutaDoc.data();
-          console.log(`Datos del documento de ruta para el ID ${id}:`, data);
-          return { id, ...data };
-        }
-        return null;
-      })).then(results => results.filter(result => result !== null));
+        return { id, ...rutaDoc.data() };
+      }));
       console.log('Rutas obtenidas:', this.rutas);
     } catch (error) {
-      console.error('Error obteniendo rutas:', error);
+      console.error('Error al obtener rutas:', error);
     }
   }
 
@@ -73,28 +187,99 @@ export class DriverMapPage implements OnInit {
       console.log('Instantánea de consulta de vehículos:', querySnapshot);
       console.log('Número de documentos de vehículos:', querySnapshot.size);
 
-      // Obtener IDs de vehículos del conductor
-      const conductorVehiculosRef = collection(this.firestore, `Conductores/${this.conductorId}/vehiculos`);
-      const conductorVehiculosSnapshot = await getDocs(conductorVehiculosRef);
-      const conductorVehiculosIds = conductorVehiculosSnapshot.docs.map(doc => doc.id);
-      console.log('IDs de vehículos del conductor:', conductorVehiculosIds);
-      const vehiculoIds = querySnapshot.docs.map(doc => doc.id);
-      console.log('IDs de vehículos obtenidos:', vehiculoIds);
-
-      // Obtener detalles de los vehículos desde la colección general del servicio
-      this.vehiculos = await Promise.all(vehiculoIds.map(async id => {
-        const vehiculoDocRef = doc(this.firestore, `Servicios/${this.serviceId}/vehiculos/${id}`);
-        const vehiculoDoc = await getDoc(vehiculoDocRef);
-        if (vehiculoDoc.exists()) {
-          const data = vehiculoDoc.data();
-          console.log(`Datos del documento de vehículo para el ID ${id}:`, data);
-          return { id, ...data };
-        }
-        return null;
-      })).then(results => results.filter(result => result !== null));
+      this.vehiculos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('Vehículos obtenidos:', this.vehiculos);
     } catch (error) {
-      console.error('Error obteniendo vehículos:', error);
+      console.error('Error al obtener vehículos:', error);
+    }
+  }
+
+  async getParaderos(rutaId: string) {
+    console.log(`Obteniendo paraderos para la ruta ID: ${rutaId}`);
+    const paraderosRef = collection(this.firestore, `Servicios/${this.selectedService}/rutas/${rutaId}/paraderos`);
+    const querySnapshot = await getDocs(paraderosRef);
+    const paraderos = querySnapshot.docs.map(doc => doc.data());
+    console.log('Paraderos obtenidos:', paraderos);
+
+    // Limpiar los marcadores de los paraderos anteriores
+    for (const marker of this.paraderoMarkers) {
+      marker.setMap(null);
+    }
+    this.paraderoMarkers = [];
+
+    // Agregar nuevos marcadores
+    for (const paradero of paraderos) {
+      const marker = new google.maps.Marker({
+        position: { lat: paradero['lat'], lng: paradero['lng'] },
+        map: this.googleMapInstance,
+        title: paradero['nombre'] || 'Paradero',
+        icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
+      });
+      this.paraderoMarkers.push(marker); // Almacenar el marcador del paradero
+
+      // Añadir listener para mostrar el nombre del paradero
+      marker.addListener('click', () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: paradero['nombre'] || 'Paradero',
+        });
+        infoWindow.open(this.googleMapInstance, marker);
+      });
+    }
+  }
+
+  onServiceChange(serviceId: string) {
+    console.log(`Servicio seleccionado: ${serviceId}`);
+    this.selectedService = serviceId;
+    this.getRutas();
+  }
+
+  onRutaChange(rutaId: string) {
+    console.log(`Ruta seleccionada: ${rutaId}`);
+    this.selectedRuta = rutaId;
+    this.getParaderos(rutaId);
+  }
+
+  async UbicacionActual() {
+    const coordinates = await Geolocation.getCurrentPosition();
+    this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
+    console.log(`Actualizando posición: ${this.currentPosition}`); // Añadir console.log para verificar la actualización
+    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
+    this.googleMapInstance.setZoom(15);
+
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
+    }
+
+    this.currentMarker = new google.maps.Marker({
+      position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
+      map: this.googleMapInstance,
+      title: 'Mi ubicación',
+      icon: 'assets/icon/car.png', // URL del icono azul para la ubicación del usuario
+    });
+
+
+    // Actualizar la ubicación en Firestore
+    if (this.ubicacionDocRef) {
+      await setDoc(this.ubicacionDocRef, {
+        lat: coordinates.coords.latitude,
+        lng: coordinates.coords.longitude,
+        nombreVehiculo: this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo)?.nombre,
+        timestamp: new Date(),
+        recorridoId: this.recorridoId // Añadir el ID del recorrido
+      });
+    }
+  }
+
+  startPositionUpdates() {
+    this.positionInterval = setInterval(() => {
+      this.UbicacionActual();
+    }, 3000); // Actualizar cada 3 segundos
+  }
+
+  stopPositionUpdates() {
+    if (this.positionInterval) {
+      clearInterval(this.positionInterval);
+      this.positionInterval = null;
     }
   }
 
@@ -104,10 +289,31 @@ export class DriverMapPage implements OnInit {
     // Obtener detalles de la ruta seleccionada
     const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
     const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
+    
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
       try {
-        // Generar ID personalizado
+        // Eliminar la colección de ubicaciones existente
+        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
+        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
+        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        // Asignar el ID de la ruta seleccionada al recorridoId
+        this.recorridoId = rutaSeleccionada.id;
+
+        // Crear el primer documento de ubicación y almacenar su referencia
+        this.ubicacionDocRef = doc(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion/ubicacion-actual`);
+        const coordinates = await Geolocation.getCurrentPosition();
+        await setDoc(this.ubicacionDocRef, {
+          lat: coordinates.coords.latitude,
+          lng: coordinates.coords.longitude,
+          timestamp: new Date(),
+          nombreVehiculo: this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo)?.nombre,
+          recorridoId: this.recorridoId // Añadir el ID del recorrido
+        });
+
+        // Generar ID personalizado para el historial
         const timestamp = new Date();
         const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
 
@@ -122,6 +328,9 @@ export class DriverMapPage implements OnInit {
           timestamp: timestamp
         });
         console.log('Historial guardado correctamente');
+
+        // Iniciar la actualización de la posición
+        this.startPositionUpdates();
       } catch (error) {
         console.error('Error guardando en el historial:', error);
       }
@@ -139,9 +348,9 @@ export class DriverMapPage implements OnInit {
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
       try {
-        // Generar ID personalizado
+        // Generar ID personalizado para el historial
         const timestamp = new Date();
-        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Termino-${this.conductorCorreo}`;
+        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Fin-${this.conductorCorreo}`;
 
         // Guardar en la colección historial
         const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
@@ -150,15 +359,28 @@ export class DriverMapPage implements OnInit {
           patente: vehiculoSeleccionado.patente,
           nombreVehiculo: vehiculoSeleccionado.nombre,
           nombreRuta: rutaSeleccionada.nombre,
-          estado: 'Ruta finalizada',
+          estado: 'Fin de ruta',
           timestamp: timestamp
         });
         console.log('Historial guardado correctamente');
+
+        // Detener la actualización de la posición
+        this.stopPositionUpdates();
+
+        // Eliminar la colección de ubicaciones
+        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
+        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
+        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
       } catch (error) {
         console.error('Error guardando en el historial:', error);
       }
     } else {
       console.error('Ruta o vehículo no seleccionados correctamente');
     }
+  }
+
+  ngOnDestroy() {
+    this.stopPositionUpdates();
   }
 }

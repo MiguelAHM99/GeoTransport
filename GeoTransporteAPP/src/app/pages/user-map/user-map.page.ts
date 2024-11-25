@@ -1,5 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { Firestore, collection, getDocs } from '@angular/fire/firestore';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Firestore, collection, getDocs, doc, getDoc } from '@angular/fire/firestore';
 import { Geolocation } from '@capacitor/geolocation';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment.prod';
@@ -9,29 +9,49 @@ import { environment } from 'src/environments/environment.prod';
   templateUrl: './user-map.page.html',
   styleUrls: ['./user-map.page.scss'],
 })
-export class UserMapPage implements OnInit {
+export class UserMapPage implements OnInit, OnDestroy {
 
   @ViewChild('map') mapRef: ElementRef;
   map: GoogleMap;
   googleMapInstance: google.maps.Map; // Añadir una instancia de google.maps.Map
 
   currentPosition: string = 'Esperando posición...';
-  currentMarkerId: string | null = null;
+  currentMarker: google.maps.Marker | null = null;
   watchId: string | null = null; // Almacena el ID del watcher para detenerlo cuando sea necesario
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
   selectedRuta: string = '';
   paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
+  conductorMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los conductores
+  positionInterval: any; // Variable para almacenar el intervalo
 
   constructor(private readonly firestore: Firestore) { }
 
   ionViewDidEnter(){
-    this.createMap();
+    this.loadGoogleMaps().then(() => {
+      this.createMap();
+      this.startPositionUpdates(); // Iniciar la actualización de la posición
+    });
   }
 
   async ngOnInit() {
     await this.getServices();
+  }
+
+  loadGoogleMaps(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+      } else {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.mapsKey}`;
+        script.onload = () => {
+          resolve();
+        };
+        document.head.appendChild(script);
+      }
+    });
   }
 
   async createMap() {
@@ -68,18 +88,16 @@ export class UserMapPage implements OnInit {
       },
     ];
 
+    // Crear el mapa de Google usando Capacitor Google Maps
     this.map = await GoogleMap.create({
       id: 'my-map',
       element: this.mapRef.nativeElement,
       apiKey: environment.mapsKey,
       config: {
-        center: {
-          lat: -33.036,
-          lng: -71.62963,
-        },
+        center: { lat: -33.036, lng: -71.62963 },
         zoom: 8,
-        styles: mapStyles, // Aplicar los estilos al mapa
-        streetViewControl: false, // Desactivar el Street View
+        styles: mapStyles,
+        streetViewControl: false,
       },
     });
 
@@ -97,18 +115,16 @@ export class UserMapPage implements OnInit {
     this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
     this.googleMapInstance.setZoom(15);
 
-    if (this.currentMarkerId) {
-      this.map.removeMarker(this.currentMarkerId);
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
     }
 
-    const marker = new google.maps.Marker({
+    this.currentMarker = new google.maps.Marker({
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
       icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
     });
-
-    this.currentMarkerId = marker.getTitle(); // Almacenar el ID del marcador de la ubicación actual
   }
 
   async getServices() {
@@ -158,6 +174,46 @@ export class UserMapPage implements OnInit {
         infoWindow.open(this.googleMapInstance, marker);
       });
     }
+
+    // Obtener la ubicación de los conductores
+    await this.getConductoresUbicacion(rutaId);
+  }
+
+  async getConductoresUbicacion(rutaId: string) {
+    console.log(`Obteniendo ubicaciones de conductores para la ruta ID: ${rutaId}`);
+    const usuariosRef = collection(this.firestore, `Servicios/${this.selectedService}/usuarios`);
+    const querySnapshot = await getDocs(usuariosRef);
+    const conductores = querySnapshot.docs.map(doc => doc.id);
+
+    // Limpiar los marcadores de los conductores anteriores
+    for (const marker of this.conductorMarkers) {
+      marker.setMap(null);
+    }
+    this.conductorMarkers = [];
+
+    for (const conductorId of conductores) {
+      const ubicacionDocRef = doc(this.firestore, `Servicios/${this.selectedService}/usuarios/${conductorId}/ubicacion/ubicacion-actual`);
+      const ubicacionDoc = await getDoc(ubicacionDocRef);
+      if (ubicacionDoc.exists() && ubicacionDoc.data()['recorridoId'] === rutaId) {
+        const ubicacion = ubicacionDoc.data();
+        const marker = new google.maps.Marker({
+          position: { lat: ubicacion['lat'], lng: ubicacion['lng'] },
+          map: this.googleMapInstance,
+          title: 'Conductor',
+          icon: 'assets/icon/car.png', // URL del icono del conductor
+        });
+
+        // Añadir listener para mostrar el nombre del vehículo
+        marker.addListener('click', () => {
+          const infoWindow = new google.maps.InfoWindow({
+            content: `Nombre del vehículo: ${ubicacion['nombreVehiculo']}`,
+          });
+          infoWindow.open(this.googleMapInstance, marker);
+        });
+
+        this.conductorMarkers.push(marker); // Almacenar el marcador del conductor
+      }
+    }
   }
 
   onServiceChange(serviceId: string) {
@@ -175,20 +231,35 @@ export class UserMapPage implements OnInit {
   async UbicacionActual() {
     const coordinates = await Geolocation.getCurrentPosition();
     this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
-    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
-    this.googleMapInstance.setZoom(15);
+    console.log(`Actualizando posición: ${this.currentPosition}`); // Añadir console.log para verificar la actualización
 
-    if (this.currentMarkerId) {
-      this.map.removeMarker(this.currentMarkerId);
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
     }
 
-    const marker = new google.maps.Marker({
+    this.currentMarker = new google.maps.Marker({
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
       icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
     });
 
-    this.currentMarkerId = marker.getTitle(); // Almacenar el ID del marcador de la ubicación actual
+    // Actualizar la ubicación de los conductores
+    if (this.selectedRuta) {
+      await this.getConductoresUbicacion(this.selectedRuta);
+    }
+  }
+
+  startPositionUpdates() {
+    this.positionInterval = setInterval(() => {
+      this.UbicacionActual();
+    }, 3000); // Actualizar cada 3 segundos
+  }
+
+  ngOnDestroy() {
+    if (this.positionInterval) {
+      clearInterval(this.positionInterval);
+      this.positionInterval = null;
+    }
   }
 }
