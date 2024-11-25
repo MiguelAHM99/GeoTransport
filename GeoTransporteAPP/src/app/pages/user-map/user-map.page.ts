@@ -206,7 +206,7 @@ export class UserMapPage implements OnInit, OnDestroy {
         // Añadir listener para mostrar el nombre del vehículo
         marker.addListener('click', () => {
           const infoWindow = new google.maps.InfoWindow({
-            content: `Vehículo: ${ubicacion['nombreVehiculo']}`,
+            content: `Nombre del vehículo: ${ubicacion['nombreVehiculo']}`,
           });
           infoWindow.open(this.googleMapInstance, marker);
         });
@@ -232,8 +232,6 @@ export class UserMapPage implements OnInit, OnDestroy {
     const coordinates = await Geolocation.getCurrentPosition();
     this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
     console.log(`Actualizando posición: ${this.currentPosition}`); // Añadir console.log para verificar la actualización
-    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
-    this.googleMapInstance.setZoom(15);
 
     if (this.currentMarker) {
       this.currentMarker.setMap(null);
