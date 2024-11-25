@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { Firestore, collection, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, getDoc } from '@angular/fire/firestore';
 import { Geolocation } from '@capacitor/geolocation';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment.prod';
@@ -23,6 +23,7 @@ export class UserMapPage implements OnInit, OnDestroy {
   rutas: any[] = [];
   selectedRuta: string = '';
   paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
+  conductorMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los conductores
   positionInterval: any; // Variable para almacenar el intervalo
 
   constructor(private readonly firestore: Firestore) { }
@@ -155,7 +156,7 @@ export class UserMapPage implements OnInit, OnDestroy {
     }
     this.paraderoMarkers = [];
 
-    // Agregar nuevos marcadores
+    // Marcar los paraderos en el mapa
     for (const paradero of paraderos) {
       const marker = new google.maps.Marker({
         position: { lat: paradero['lat'], lng: paradero['lng'] },
@@ -172,6 +173,46 @@ export class UserMapPage implements OnInit, OnDestroy {
         });
         infoWindow.open(this.googleMapInstance, marker);
       });
+    }
+
+    // Obtener la ubicación de los conductores
+    await this.getConductoresUbicacion(rutaId);
+  }
+
+  async getConductoresUbicacion(rutaId: string) {
+    console.log(`Obteniendo ubicaciones de conductores para la ruta ID: ${rutaId}`);
+    const usuariosRef = collection(this.firestore, `Servicios/${this.selectedService}/usuarios`);
+    const querySnapshot = await getDocs(usuariosRef);
+    const conductores = querySnapshot.docs.map(doc => doc.id);
+
+    // Limpiar los marcadores de los conductores anteriores
+    for (const marker of this.conductorMarkers) {
+      marker.setMap(null);
+    }
+    this.conductorMarkers = [];
+
+    for (const conductorId of conductores) {
+      const ubicacionDocRef = doc(this.firestore, `Servicios/${this.selectedService}/usuarios/${conductorId}/ubicacion/ubicacion-actual`);
+      const ubicacionDoc = await getDoc(ubicacionDocRef);
+      if (ubicacionDoc.exists() && ubicacionDoc.data()['recorridoId'] === rutaId) {
+        const ubicacion = ubicacionDoc.data();
+        const marker = new google.maps.Marker({
+          position: { lat: ubicacion['lat'], lng: ubicacion['lng'] },
+          map: this.googleMapInstance,
+          title: 'Conductor',
+          icon: 'assets/icon/car.png', // URL del icono del conductor
+        });
+
+        // Añadir listener para mostrar el nombre del vehículo
+        marker.addListener('click', () => {
+          const infoWindow = new google.maps.InfoWindow({
+            content: `Vehículo: ${ubicacion['nombreVehiculo']}`,
+          });
+          infoWindow.open(this.googleMapInstance, marker);
+        });
+
+        this.conductorMarkers.push(marker); // Almacenar el marcador del conductor
+      }
     }
   }
 
@@ -204,6 +245,11 @@ export class UserMapPage implements OnInit, OnDestroy {
       title: 'Mi ubicación',
       icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
     });
+
+    // Actualizar la ubicación de los conductores
+    if (this.selectedRuta) {
+      await this.getConductoresUbicacion(this.selectedRuta);
+    }
   }
 
   startPositionUpdates() {

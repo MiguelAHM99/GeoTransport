@@ -27,6 +27,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
   paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
   positionInterval: any; // Variable para almacenar el intervalo
   ubicacionDocRef: any; // Variable para almacenar la referencia del primer documento de ubicación
+  recorridoId: string; // Variable para almacenar el ID del recorrido
 
   recorridoIniciado: boolean = false; 
   serviceId: string;
@@ -143,7 +144,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
-      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+      icon: 'assets/icon/car.png', // URL del icono azul para la ubicación del usuario
     });
   }
 
@@ -253,15 +254,18 @@ export class DriverMapPage implements OnInit, OnDestroy {
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
-      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+      icon: 'assets/icon/car.png', // URL del icono azul para la ubicación del usuario
     });
+
 
     // Actualizar la ubicación en Firestore
     if (this.ubicacionDocRef) {
       await setDoc(this.ubicacionDocRef, {
         lat: coordinates.coords.latitude,
         lng: coordinates.coords.longitude,
-        timestamp: new Date()
+        nombreVehiculo: this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo)?.nombre,
+        timestamp: new Date(),
+        recorridoId: this.recorridoId // Añadir el ID del recorrido
       });
     }
   }
@@ -285,6 +289,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
     // Obtener detalles de la ruta seleccionada
     const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
     const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
+    
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
       try {
@@ -294,16 +299,21 @@ export class DriverMapPage implements OnInit, OnDestroy {
         const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
         await Promise.all(deletePromises);
 
+        // Asignar el ID de la ruta seleccionada al recorridoId
+        this.recorridoId = rutaSeleccionada.id;
+
         // Crear el primer documento de ubicación y almacenar su referencia
         this.ubicacionDocRef = doc(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion/ubicacion-actual`);
         const coordinates = await Geolocation.getCurrentPosition();
         await setDoc(this.ubicacionDocRef, {
           lat: coordinates.coords.latitude,
           lng: coordinates.coords.longitude,
-          timestamp: new Date()
+          timestamp: new Date(),
+          nombreVehiculo: this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo)?.nombre,
+          recorridoId: this.recorridoId // Añadir el ID del recorrido
         });
 
-        // Generar ID personalizado
+        // Generar ID personalizado para el historial
         const timestamp = new Date();
         const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
 
@@ -338,7 +348,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
       try {
-        // Generar ID personalizado
+        // Generar ID personalizado para el historial
         const timestamp = new Date();
         const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Fin-${this.conductorCorreo}`;
 
