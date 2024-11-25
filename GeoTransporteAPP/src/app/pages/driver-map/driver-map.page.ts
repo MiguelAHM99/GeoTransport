@@ -5,6 +5,7 @@ import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment.prod';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 import { AuthService } from 'src/app/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-driver-map',
@@ -39,7 +40,8 @@ export class DriverMapPage implements OnInit, OnDestroy {
   constructor(
     private readonly firestore: Firestore,
     private readonly selectedServiceService: SelectedServiceService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {}
 
   ionViewDidEnter(){
@@ -50,14 +52,52 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
   async ngOnInit() {
     console.log('DriverMapPage inicializado');
+    this.loadState();
     this.serviceId = this.selectedServiceService.getSelectedService();
+    if (!this.serviceId) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      this.serviceId = user.selectedServicio;
+    }
     console.log(`ID del servicio obtenido: ${this.serviceId}`);
     this.conductorId = this.authService.getCurrentUserId(); // Obtener el ID del usuario autenticado
     this.conductorCorreo = this.authService.getCurrentUserEmail(); // Obtener el correo del usuario autenticado
     console.log(`ID del conductor obtenido: ${this.conductorId}`);
     console.log(`Correo del conductor obtenido: ${this.conductorCorreo}`);
-    await this.getRutas();
-    await this.getVehiculos();
+    if (this.serviceId) {
+      await this.loadData();
+      if (this.recorridoIniciado) {
+        this.startPositionUpdates();
+      }
+    } else {
+      console.error('ID del servicio no encontrado');
+    }
+  }
+
+  ngOnDestroy() {
+    this.saveState();
+    this.stopPositionUpdates();
+  }
+
+  // Guardar el estado de la página en localStorage
+  saveState() {
+    const state = {
+      conductorCorreo: this.conductorCorreo,
+      serviceId: this.serviceId,
+      recorridoIniciado: this.recorridoIniciado,
+      selectedVehiculo: this.selectedVehiculo,
+      selectedRuta: this.selectedRuta
+    };
+    localStorage.setItem('driverMapState', JSON.stringify(state));
+  }
+
+  // Cargar el estado de la página desde localStorage
+  loadState() {
+    const state = JSON.parse(localStorage.getItem('driverMapState') || '{}');
+    this.conductorCorreo = state.conductorCorreo || this.authService.getCurrentUserEmail();
+    this.serviceId = state.serviceId || this.selectedServiceService.getSelectedService();
+    this.recorridoIniciado = state.recorridoIniciado || false;
+    this.selectedVehiculo = state.selectedVehiculo || '';
+    this.selectedRuta = state.selectedRuta || '';
   }
 
   loadGoogleMaps(): Promise<void> {
@@ -380,7 +420,20 @@ export class DriverMapPage implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    this.stopPositionUpdates();
+  // Método para cargar datos necesarios
+  async loadData() {
+    await this.getRutas();
+    await this.getVehiculos();
+  }
+
+  // Método para refrescar datos
+  async refrescarDatos() {
+    await this.loadData();
+  }
+
+  // Método para cerrar sesión
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

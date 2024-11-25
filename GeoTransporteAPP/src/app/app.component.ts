@@ -33,6 +33,7 @@ export class AppComponent implements OnInit {
       console.log('Usuario encontrado en localStorage:', loggedUser);
       this.authService.setCurrentUserId(loggedUser.userDocId, loggedUser.selectedServicio);
       this.authService.setCurrentUserEmail(loggedUser.userData.correo);
+      this.authService.setSessionFromLocalStorage(); // Establecer que la sesión se cargó desde el localStorage
     } else {
       // Redirigir al usuario a la página de login si no está autenticado
       this.router.navigate(['/login']);

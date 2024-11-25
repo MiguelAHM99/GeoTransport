@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { ConductorI } from 'src/app/models/conductores.models';
 import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, getDocs, doc, deleteDoc, query, where  } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, deleteDoc, query, where } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-admin-driver',
@@ -17,16 +18,27 @@ export class AdminDriverPage implements OnInit {
   cargando: boolean = false;
   selectedServicio: string;
   showPassword: { [key: string]: boolean } = {};
+  sessionStartedRecently: boolean = false;
+  isSessionFromLocalStorage: boolean = false;
 
   constructor(
     private readonly firestoreService: FirestoreService,
     private readonly alertController: AlertController,
     private readonly firestore: Firestore,
     private readonly router: Router,
-    private readonly selectedServiceService: SelectedServiceService
+    private readonly selectedServiceService: SelectedServiceService,
+    private readonly authService: AuthService
   ) { }
 
   ngOnInit() {
+    this.authService.sessionStartedRecently().subscribe(recentlyStarted => {
+      this.sessionStartedRecently = recentlyStarted;
+    });
+
+    this.authService.isSessionFromLocalStorage().subscribe(fromLocalStorage => {
+      this.isSessionFromLocalStorage = fromLocalStorage;
+    });
+
     const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (loggedUser) {
       this.selectedServicio = loggedUser.selectedServicio;
@@ -59,6 +71,11 @@ export class AdminDriverPage implements OnInit {
 
   // Editar un conductor existente
   async edit(conductor: ConductorI) {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para editar un conductor.');
+      return;
+    }
+
     const alert = await this.alertController.create({
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas editar al conductor: ${conductor.correo}?`,
@@ -80,6 +97,11 @@ export class AdminDriverPage implements OnInit {
 
   // Eliminar un conductor existente
   async delete(conductor: ConductorI) {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para eliminar un conductor.');
+      return;
+    }
+
     const alert = await this.alertController.create({
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas eliminar al conductor: ${conductor.correo}?`,
@@ -93,9 +115,15 @@ export class AdminDriverPage implements OnInit {
           handler: async () => {
             this.cargando = true;
             console.log('Eliminando conductor:', conductor.id);
-            await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/conductores/${conductor.id}`));
-            this.cargando = false;
-            this.loadConductores(); // Recargar la lista de conductores
+            try {
+              await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/usuarios/${conductor.id}`));
+              console.log('Conductor eliminado:', conductor.id);
+              this.loadConductores(); // Recargar la lista de conductores
+            } catch (error) {
+              console.error('Error al eliminar el conductor:', error);
+            } finally {
+              this.cargando = false;
+            }
           }
         }
       ]
@@ -104,6 +132,11 @@ export class AdminDriverPage implements OnInit {
   }
 
   create() {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para crear un nuevo conductor.');
+      return;
+    }
+
     console.log('Navegando a la creación de un nuevo conductor');
     this.router.navigate(['/admin-edit-driver']);
   }
@@ -112,5 +145,17 @@ export class AdminDriverPage implements OnInit {
   togglePasswordVisibility(conductorId: string) {
     this.showPassword[conductorId] = !this.showPassword[conductorId];
     console.log('Visibilidad de la contraseña para el conductor', conductorId, ':', this.showPassword[conductorId]);
+  }
+
+  // Mostrar un alert de error o éxito y redirigir al login
+  async showAlertAndRedirect(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
+    await alert.onDidDismiss();
+    this.router.navigate(['/login']);
   }
 }

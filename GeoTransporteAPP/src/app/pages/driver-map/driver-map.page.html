@@ -1,18 +1,16 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-button routerLink="/inicio">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      <ion-button (click)="logout()">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-
-
   <div class="padding">
-    <ion-item >
+    <ion-item>
       <ion-label>Seleccionar Ruta</ion-label>
       <ion-select class="end" [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta" [disabled]="recorridoIniciado">
         <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
@@ -34,9 +32,11 @@
     <ion-button *ngIf="recorridoIniciado" class="styled-button" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Finalizar recorrido
     </ion-button>
+    <ion-button class="styled-button" (click)="refrescarDatos()">
+      Refrescar Datos
+    </ion-button>
   </div>
   <div class="map-wrapper">
     <div #map id="my-map" style="height: 100%; width: 100%;"></div>
   </div>
-
 </ion-content>

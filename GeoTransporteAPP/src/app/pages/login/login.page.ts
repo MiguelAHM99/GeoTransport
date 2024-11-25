@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, query, where } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
@@ -32,43 +32,26 @@ export class LoginPage implements OnInit {
       let userDocId: string;
       let selectedServicio: string;
 
-      // Iterar sobre cada servicio y buscar al usuario
       for (const servicioDoc of serviciosSnapshot.docs) {
         const servicioId = servicioDoc.id;
-        console.log(`Buscando en servicio: ${servicioId}`);
-        const usuariosSnapshot = await getDocs(query(
-          collection(this.firestore, `Servicios/${servicioId}/usuarios`),
-          where('correo', '==', this.correo)
-        ));
-        console.log(`Usuarios encontrados en ${servicioId}:`, usuariosSnapshot.docs.map(doc => doc.id));
+        const usuariosRef = collection(this.firestore, `Servicios/${servicioId}/usuarios`);
+        const q = query(usuariosRef, where('correo', '==', this.correo), where('contrasenna', '==', this.contrasenna));
+        const querySnapshot = await getDocs(q);
 
-        if (!usuariosSnapshot.empty) {
-          const userDoc = usuariosSnapshot.docs[0];
-          userData = userDoc.data();
-          userDocId = userDoc.id;
+        if (!querySnapshot.empty) {
           userFound = true;
-          selectedServicio = servicioId; // Almacenar el servicio encontrado
+          userDocId = querySnapshot.docs[0].id;
+          userData = querySnapshot.docs[0].data();
+          selectedServicio = servicioId;
           break;
         }
       }
 
       if (!userFound) {
-        console.error('Usuario no encontrado');
-        alert('Usuario no encontrado');
-        return;
+        throw new Error('Usuario no encontrado o credenciales incorrectas.');
       }
 
-      // Verificar la contraseña
-      if (userData['contrasenna'] !== this.contrasenna) {
-        console.error('Contraseña incorrecta');
-        alert('Contraseña incorrecta');
-        return;
-      }
-
-      console.log('Usuario autenticado:', userData);
-
-      // Almacenar el ID del usuario autenticado en AuthService
-      this.authService.setCurrentUserId(userDocId, selectedServicio);
+      await this.authService.setCurrentUserId(userDocId, selectedServicio);
       this.authService.setCurrentUserEmail(this.correo);
 
       // Almacenar el servicio seleccionado en SelectedServiceService
@@ -76,6 +59,9 @@ export class LoginPage implements OnInit {
 
       // Guardar la información del usuario en localStorage
       localStorage.setItem('user', JSON.stringify({ userData, userDocId, selectedServicio }));
+
+      // Establecer la bandera de sesión iniciada recientemente
+      this.authService.login();
 
       // Redirigir al usuario basado en su rol
       if (userData['socio']) {

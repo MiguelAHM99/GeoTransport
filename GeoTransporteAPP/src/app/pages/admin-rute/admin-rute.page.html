@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
@@ -6,29 +6,28 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" >
-<div class="main-container-">
+<ion-content [fullscreen]="true">
+  <div class="main-container-">
+    <ion-button class="add-button styled-button" (click)="create()">Agregar Nueva Ruta</ion-button>
 
-  <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-rute">Agregar Nueva Ruta</ion-button>
-
-  <ion-card class="card-container" *ngFor="let ruta of rutas">
-    <ion-item>
-      <ion-label>
-        Nombre: {{ruta.nombre}} <br>
-        Descripción: {{ruta.descripcion}} <br>
-        Inicio: {{ruta.inicio}} <br>
-        Destino: {{ruta.destino}}
-      </ion-label>
-      <ion-buttons slot="end">
-        <ion-button (click)="edit(ruta)" color="warning">Editar</ion-button>
-        <ion-button (click)="delete(ruta)" color="danger">Eliminar</ion-button>
-      </ion-buttons>
-    </ion-item>
-  </ion-card>
-</div>
-<div class="card-container">
-  <ion-text *ngIf="rutas.length === 0" color="medium" class="no-rutas">
-    <p>No hay rutas disponibles.</p>
-  </ion-text>
-</div>
+    <ion-card class="card-container" *ngFor="let ruta of rutas">
+      <ion-item>
+        <ion-label>
+          Nombre: {{ruta.nombre}} <br>
+          Descripción: {{ruta.descripcion}} <br>
+          Inicio: {{ruta.inicio}} <br>
+          Destino: {{ruta.destino}}
+        </ion-label>
+        <ion-buttons slot="end">
+          <ion-button (click)="edit(ruta)" color="warning">Editar</ion-button>
+          <ion-button (click)="delete(ruta)" color="danger">Eliminar</ion-button>
+        </ion-buttons>
+      </ion-item>
+    </ion-card>
+  </div>
+  <div class="card-container">
+    <ion-text *ngIf="rutas.length === 0" color="medium" class="no-rutas">
+      <p>No hay rutas disponibles.</p>
+    </ion-text>
+  </div>
 </ion-content>

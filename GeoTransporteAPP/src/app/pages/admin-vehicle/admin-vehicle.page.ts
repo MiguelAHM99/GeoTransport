@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { VehiculoI } from 'src/app/models/vehiculos.models';
 import { FirestoreService } from 'src/app/services/firestore.service';
 import { AlertController } from '@ionic/angular';
-import { Firestore, collection, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, deleteDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-admin-vehicle',
@@ -14,28 +15,42 @@ import { SelectedServiceService } from 'src/app/services/selected-service.servic
 export class AdminVehiclePage implements OnInit {
 
   vehiculos: VehiculoI[] = [];
-  newVehiculo: VehiculoI;
+  newVehiculo: VehiculoI = {
+    id: '',
+    nombre: '',
+    patente: ''
+  };
   cargando: boolean = false;
-  vehiculo: VehiculoI;
   selectedServicio: string;
+  sessionStartedRecently: boolean = false;
+  isSessionFromLocalStorage: boolean = false;
 
   constructor(
     private readonly firestoreService: FirestoreService,
     private readonly alertController: AlertController,
     private readonly firestore: Firestore,
     private readonly router: Router,
-    private readonly selectedServiceService: SelectedServiceService
-  ) {
-    this.initVehiculo();
-  }
+    private readonly selectedServiceService: SelectedServiceService,
+    private readonly authService: AuthService
+  ) { }
 
   ngOnInit() {
+    this.authService.sessionStartedRecently().subscribe(recentlyStarted => {
+      this.sessionStartedRecently = recentlyStarted;
+    });
+
+    this.authService.isSessionFromLocalStorage().subscribe(fromLocalStorage => {
+      this.isSessionFromLocalStorage = fromLocalStorage;
+    });
+
     const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (loggedUser) {
       this.selectedServicio = loggedUser.selectedServicio;
+      console.log('Usuario autenticado, servicio seleccionado:', this.selectedServicio);
       this.loadVehiculos();
     } else {
       // Redirigir al usuario a la página de login si no está autenticado
+      console.log('Usuario no autenticado, redirigiendo a login');
       this.router.navigate(['/login']);
     }
   }
@@ -83,6 +98,11 @@ export class AdminVehiclePage implements OnInit {
 
   // Guardar el nuevo vehículo en Firestore
   async save() {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para guardar un vehículo.');
+      return;
+    }
+
     if (!this.validateInputs()) return; // Si la validación falla, detener el guardado.
     this.cargando = true;
     await this.firestoreService.createDocument(this.newVehiculo, `Servicios/${this.selectedServicio}/vehiculos`, this.newVehiculo.id);
@@ -94,17 +114,17 @@ export class AdminVehiclePage implements OnInit {
 
   // Editar un vehículo existente
   async edit(vehiculo: VehiculoI) {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para editar un vehículo.');
+      return;
+    }
+
     const alert = await this.alertController.create({
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas editar el vehículo: ${vehiculo.nombre}?`,
       buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Confirmar',
-          handler: () => {
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Confirmar', handler: () => {
             // Nada en el handler, solo cerramos el alert
           }
         }
@@ -124,25 +144,54 @@ export class AdminVehiclePage implements OnInit {
 
   // Eliminar un vehículo existente
   async delete(vehiculo: VehiculoI) {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para eliminar un vehículo.');
+      return;
+    }
+
     const alert = await this.alertController.create({
       header: 'Confirmar',
       message: `¿Estás seguro de que deseas eliminar el vehículo: ${vehiculo.nombre}?`,
       buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Confirmar',
-          handler: async () => {
+        { text: 'Cancelar', role: 'cancel' },
+        { text: 'Confirmar', handler: async () => {
             this.cargando = true;
-            await this.firestoreService.deleteDocument(`Servicios/${this.selectedServicio}/vehiculos`, vehiculo.id);
-            this.cargando = false;
-            this.loadVehiculos(); // Recargar la lista de vehículos
+            console.log('Eliminando vehículo:', vehiculo.id);
+            try {
+              await deleteDoc(doc(this.firestore, `Servicios/${this.selectedServicio}/vehiculos/${vehiculo.id}`));
+              console.log('Vehículo eliminado:', vehiculo.id);
+              this.loadVehiculos(); // Recargar la lista de vehículos
+            } catch (error) {
+              console.error('Error al eliminar el vehículo:', error);
+            } finally {
+              this.cargando = false;
+            }
           }
         }
       ]
     });
     await alert.present();
+  }
+
+  // Crear un nuevo vehículo
+  create() {
+    if (this.isSessionFromLocalStorage) {
+      this.showAlertAndRedirect('Sesión expirada', 'Debes iniciar sesión nuevamente para agregar un nuevo vehículo.');
+      return;
+    }
+
+    this.router.navigate(['/admin-edit-vehicle']);
+  }
+
+  // Mostrar un alert de error o éxito y redirigir al login
+  async showAlertAndRedirect(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
+    await alert.onDidDismiss();
+    this.router.navigate(['/login']);
   }
 }

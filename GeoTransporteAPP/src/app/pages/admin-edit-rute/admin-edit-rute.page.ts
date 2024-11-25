@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment.prod';
-import { RutaI } from 'src/app/models/rutas.models';
+import { RutaI, ParaderoI } from 'src/app/models/rutas.models';
 import { SelectedServiceService } from 'src/app/services/selected-service.service';
 import { FirestoreService } from 'src/app/services/firestore.service';
 
@@ -24,12 +24,13 @@ export class AdminEditRutePage implements OnInit {
     nombre: '',
     descripcion: '',
     inicio: '',
-    destino: ''
+    destino: '',
+    paraderos: [] // Asegúrate de que la interfaz RutaI incluya esta propiedad
   };
   selectedServicio: string;
   rutaId: string | null = null;
   cargando: boolean = false;
-  paraderos: any[] = [];
+  paraderos: ParaderoI[] = [];
   markers: Map<string, google.maps.Marker> = new Map(); // Map to store marker references
 
   constructor(
@@ -142,7 +143,7 @@ export class AdminEditRutePage implements OnInit {
       title: 'Paradero',
       icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
     });
-    this.paraderos.push({ id: paraderoId, marker, lat: latitude, lng: longitude, nombre: 'Paradero' });
+    this.paraderos.push({ id: paraderoId, lat: latitude, lng: longitude, nombre: 'Paradero' });
     this.markers.set(paraderoId, marker); // Store the marker reference
 
     // Añadir listener para mostrar el nombre del paradero
@@ -177,7 +178,7 @@ export class AdminEditRutePage implements OnInit {
       this.newRuta = docSnap.data() as RutaI;
       // Cargar paraderos existentes
       const paraderosSnapshot = await getDocs(collection(this.firestore, `Servicios/${this.selectedServicio}/rutas/${id}/paraderos`));
-      this.paraderos = paraderosSnapshot.docs.map(doc => doc.data());
+      this.paraderos = paraderosSnapshot.docs.map(doc => doc.data() as ParaderoI);
       // Añadir marcadores al mapa
       for (const paradero of this.paraderos) {
         const marker = new google.maps.Marker({

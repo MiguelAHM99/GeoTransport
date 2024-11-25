@@ -7,23 +7,21 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" >
-<div class="main-container-">
-
-
-    <ion-button class="add-button" class="styled-button" routerLink="/admin-edit-vehicle">Agregar Nuevo Vehículo</ion-button>
+  <div class="main-container-">
+    <ion-button class="add-button styled-button" (click)="create()">Agregar Nuevo Vehículo</ion-button>
 
     <ion-card class="card-container" *ngFor="let vehiculo of vehiculos">    
       <ion-item >
-            <ion-label>
-              Nombre: {{vehiculo.nombre}} <br>
-              Patente: {{vehiculo.patente}} 
-            </ion-label>
-            <ion-buttons>
-              <ion-button (click)="edit(vehiculo)" color="warning">Editar</ion-button>
-              <ion-button (click)="delete(vehiculo)" color="danger">Eliminar</ion-button>
-            </ion-buttons>
-        </ion-item>
-      </ion-card>
+        <ion-label>
+          Nombre: {{vehiculo.nombre}} <br>
+          Patente: {{vehiculo.patente}} 
+        </ion-label>
+        <ion-buttons>
+          <ion-button (click)="edit(vehiculo)" color="warning">Editar</ion-button>
+          <ion-button (click)="delete(vehiculo)" color="danger">Eliminar</ion-button>
+        </ion-buttons>
+      </ion-item>
+    </ion-card>
   </div>
   <div class="card-container">
     <ion-text *ngIf="vehiculos.length === 0" color="medium" class="no-vehiculos">

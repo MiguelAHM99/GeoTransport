@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { FirestoreService } from './firestore.service';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { FirestoreService } from './firestore.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,31 +8,56 @@ import { BehaviorSubject, Observable } from 'rxjs';
 export class AuthService {
   private currentUserId: string;
   private currentUserEmail: string;
-  private isSocio: boolean | undefined; // Usamos undefined para manejar posibles valores no definidos
-  private loggedIn = new BehaviorSubject<boolean>(false); // Valor inicial, modifícalo según el estado real de autenticación
+  private isSocio: boolean | undefined;
+  private loggedIn = new BehaviorSubject<boolean>(false);
+  private sessionStartedRecentlySubject = new BehaviorSubject<boolean>(false); // Renombrado para evitar duplicación
+  private sessionFromLocalStorage = new BehaviorSubject<boolean>(false);
 
   constructor(
-    private readonly firestoreService: FirestoreService) 
-  {
-     // Puedes inicializar el estado real aquí, por ejemplo, leyendo un token de almacenamiento local
-     const token = localStorage.getItem('token'); // Ejemplo
-     this.loggedIn.next(!!token);
+    private readonly firestoreService: FirestoreService
+  ) {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (user) {
+      this.currentUserId = user.userDocId;
+      this.currentUserEmail = user.userData.correo;
+      this.isSocio = user.userData.socio;
+      this.loggedIn.next(true);
+      this.sessionStartedRecentlySubject.next(false);
+      this.sessionFromLocalStorage.next(true);
+    } else {
+      this.loggedIn.next(false);
+    }
   }
 
-  // Devuelve el estado de autenticación como Observable
   isAuthenticated(): Observable<boolean> {
     return this.loggedIn.asObservable();
   }
 
-  // Métodos para cambiar el estado de autenticación
+  sessionStartedRecently(): Observable<boolean> {
+    return this.sessionStartedRecentlySubject.asObservable();
+  }
+
+  isSessionFromLocalStorage(): Observable<boolean> {
+    return this.sessionFromLocalStorage.asObservable();
+  }
+
   login() {
     this.loggedIn.next(true);
+    this.sessionStartedRecentlySubject.next(true);
+    this.sessionFromLocalStorage.next(false);
   }
 
   logout() {
     this.loggedIn.next(false);
-    localStorage.removeItem('token'); // Ejemplo de limpieza de token
+    this.sessionStartedRecentlySubject.next(false);
+    this.sessionFromLocalStorage.next(false);
+    localStorage.removeItem('user');
   }
+
+  setSessionFromLocalStorage() {
+    this.sessionFromLocalStorage.next(true);
+  }
+
   // Método asincrónico para establecer el ID y obtener los datos del usuario
   async setCurrentUserId(userId: string, servicioId: string): Promise<void> {
     this.currentUserId = userId;
@@ -46,6 +71,7 @@ export class AuthService {
         if (userData && userData.hasOwnProperty('socio')) {
           this.isSocio = userData.socio;
           console.log("Rol del usuario (socio):", this.isSocio);
+          this.sessionStartedRecentlySubject.next(true); // Establecer la bandera cuando se obtienen los datos del usuario
         } else {
           console.error("El campo 'socio' no está definido en el documento del usuario");
         }
@@ -72,18 +98,13 @@ export class AuthService {
   // Método para verificar si el usuario es socio
   userIsSocio(): boolean {
     if (this.isSocio === undefined) {
-      console.error("El rol del usuario no está definido aún");
-      return false; // O puedes devolver null o lanzar un error dependiendo de tu lógica
+      throw new Error("El rol del usuario no está definido");
     }
-    return this.isSocio === true;
+    return this.isSocio;
   }
 
   // Método para verificar si el usuario es conductor
   userIsConductor(): boolean {
-    if (this.isSocio === undefined) {
-      console.error("El rol del usuario no está definido aún");
-      return false; // O puedes devolver null o lanzar un error dependiendo de tu lógica
-    }
     return this.isSocio === false;
   }
 }
