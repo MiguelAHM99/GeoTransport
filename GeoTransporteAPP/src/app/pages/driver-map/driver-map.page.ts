@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { Firestore, collection, getDocs, doc, getDoc, setDoc } from '@angular/fire/firestore';
+import { Firestore, collection, getDocs, doc, setDoc, getDoc, deleteDoc } from '@angular/fire/firestore';
 import { Geolocation } from '@capacitor/geolocation';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from 'src/environments/environment.prod';
@@ -26,6 +26,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
   selectedRuta: string = '';
   paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
   positionInterval: any; // Variable para almacenar el intervalo
+  ubicacionDocRef: any; // Variable para almacenar la referencia del primer documento de ubicación
 
   recorridoIniciado: boolean = false; 
   serviceId: string;
@@ -254,12 +255,21 @@ export class DriverMapPage implements OnInit, OnDestroy {
       title: 'Mi ubicación',
       icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
     });
+
+    // Actualizar la ubicación en Firestore
+    if (this.ubicacionDocRef) {
+      await setDoc(this.ubicacionDocRef, {
+        lat: coordinates.coords.latitude,
+        lng: coordinates.coords.longitude,
+        timestamp: new Date()
+      });
+    }
   }
 
   startPositionUpdates() {
     this.positionInterval = setInterval(() => {
       this.UbicacionActual();
-    }, 5000); // Actualizar cada 5 segundos
+    }, 3000); // Actualizar cada 3 segundos
   }
 
   stopPositionUpdates() {
@@ -278,6 +288,21 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
       try {
+        // Eliminar la colección de ubicaciones existente
+        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
+        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
+        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        // Crear el primer documento de ubicación y almacenar su referencia
+        this.ubicacionDocRef = doc(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion/ubicacion-actual`);
+        const coordinates = await Geolocation.getCurrentPosition();
+        await setDoc(this.ubicacionDocRef, {
+          lat: coordinates.coords.latitude,
+          lng: coordinates.coords.longitude,
+          timestamp: new Date()
+        });
+
         // Generar ID personalizado
         const timestamp = new Date();
         const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
@@ -331,6 +356,12 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
         // Detener la actualización de la posición
         this.stopPositionUpdates();
+
+        // Eliminar la colección de ubicaciones
+        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
+        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
+        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
       } catch (error) {
         console.error('Error guardando en el historial:', error);
       }
