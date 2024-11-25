@@ -10,182 +10,208 @@ import { environment } from 'src/environments/environment.prod';
   styleUrls: ['./user-map.page.scss'],
 })
 export class UserMapPage implements OnInit, OnDestroy {
-  @ViewChild('map', { static: false }) mapRef!: ElementRef;
-  map!: GoogleMap;
+
+  @ViewChild('map') mapRef: ElementRef;
+  map: GoogleMap;
+  googleMapInstance: google.maps.Map; // Añadir una instancia de google.maps.Map
+
   currentPosition: string = 'Esperando posición...';
-  currentMarker: any = null;
+  currentMarker: google.maps.Marker | null = null;
+  watchId: string | null = null; // Almacena el ID del watcher para detenerlo cuando sea necesario
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
   selectedRuta: string = '';
-  paraderoMarkers: any[] = [];
+  paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
   positionInterval: any; // Variable para almacenar el intervalo
 
-  constructor(private readonly firestore: Firestore) {}
+  constructor(private readonly firestore: Firestore) { }
 
-  // Inicializa datos al cargar el componente
+  ionViewDidEnter(){
+    this.loadGoogleMaps().then(() => {
+      this.createMap();
+      this.startPositionUpdates(); // Iniciar la actualización de la posición
+    });
+  }
+
   async ngOnInit() {
-    await this.getServices(); // Obtiene la lista de servicios
+    await this.getServices();
   }
 
-  // Crea el mapa al entrar en la vista
-  async ionViewDidEnter() {
-    await this.createMap();
+  loadGoogleMaps(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+      } else {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.mapsKey}`;
+        script.onload = () => {
+          resolve();
+        };
+        document.head.appendChild(script);
+      }
+    });
   }
 
-  // Limpia recursos al salir de la vista
-  ionViewDidLeave() {
-    if (this.positionInterval) {
-      clearInterval(this.positionInterval);
-      this.positionInterval = null;
-    }
-  }
-
-  // Crea el mapa con la configuración deseada
   async createMap() {
     const mapStyles = [
-      { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
-      { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
-      { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-      { featureType: 'administrative', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-      { featureType: 'landscape', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-      { featureType: 'administrative.locality', elementType: 'labels.text', stylers: [{ visibility: 'on' }] },
+      {
+        featureType: 'poi',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'transit',
+        elementType: 'all',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'road',
+        elementType: 'labels.icon',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'landscape',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }],
+      },
+      {
+        featureType: 'administrative.locality',
+        elementType: 'labels.text',
+        stylers: [{ visibility: 'on' }],
+      },
     ];
 
+    // Crear el mapa de Google usando Capacitor Google Maps
     this.map = await GoogleMap.create({
-      id: 'my-map', // Identificador único para el mapa
-      element: this.mapRef.nativeElement, // Elemento del DOM donde se renderizará el mapa
-      apiKey: environment.mapsKey, // Clave de la API de Google Maps
+      id: 'my-map',
+      element: this.mapRef.nativeElement,
+      apiKey: environment.mapsKey,
       config: {
-        center: { lat: -33.036, lng: -71.62963 }, // Coordenadas iniciales
-        zoom: 8, // Nivel de zoom inicial
+        center: { lat: -33.036, lng: -71.62963 },
+        zoom: 8,
         styles: mapStyles,
         streetViewControl: false,
       },
     });
 
-    await this.setInitialLocation(); // Centra el mapa en la posición inicial
-    this.startWatchingPosition(); // Inicia el seguimiento de ubicación
-  }
+    // Obtener la instancia de google.maps.Map
+    this.googleMapInstance = new google.maps.Map(this.mapRef.nativeElement, {
+      center: { lat: -33.036, lng: -71.62963 },
+      zoom: 8,
+      styles: mapStyles,
+      streetViewControl: false,
+    });
 
-  // Establece la ubicación inicial del usuario
-  async setInitialLocation() {
-    try {
-      const coordinates = await Geolocation.getCurrentPosition();
-      const { latitude, longitude } = coordinates.coords;
+    // Obtener la ubicación actual del usuario
+    const coordinates = await Geolocation.getCurrentPosition();
+    this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
+    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
+    this.googleMapInstance.setZoom(15);
 
-      console.log('Coordenadas obtenidas:', latitude, longitude); // Depuración
-
-      this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
-      await this.map.setCamera({
-        coordinate: { lat: latitude, lng: longitude },
-        zoom: 15,
-      });
-
-      this.updateMarker(latitude, longitude); // Actualiza o crea el marcador
-    } catch (error) {
-      console.error('Error al obtener la ubicación inicial:', error);
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
     }
+
+    this.currentMarker = new google.maps.Marker({
+      position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
+      map: this.googleMapInstance,
+      title: 'Mi ubicación',
+      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+    });
   }
 
-  // Inicia el seguimiento continuo de la posición del usuario
-  startWatchingPosition() {
-    // Usamos setInterval para actualizar la posición cada 3 segundos
-    this.positionInterval = setInterval(async () => {
-      try {
-        const position = await Geolocation.getCurrentPosition();
-        const { latitude, longitude } = position.coords;
-
-        this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
-        this.updateMarker(latitude, longitude); // Actualiza el marcador en tiempo real
-      } catch (err) {
-        console.error('Error al rastrear posición:', err);
-      }
-    }, 3000); // Actualizar cada 3 segundos
-  }
-
-  // Agrega o actualiza el marcador en el mapa
-async updateMarker(lat: number, lng: number) {
-  console.log('currentMarker al principio:', this.currentMarker); // Verificar el valor de currentMarker
-
-  if (this.currentMarker) {
-    console.log('Marcador existente:', this.currentMarker); // Depuración: Ver el objeto del marcador
-
-    // Verifica si currentMarker tiene el método setPosition
-    if (typeof this.currentMarker.setPosition === 'function') {
-      await this.currentMarker.setPosition({ lat, lng });
-    } else {
-      console.error('El marcador no tiene el método setPosition.');
-    }
-  } else {
-    console.log('Creando un nuevo marcador...');
-    try {
-      // Crea un nuevo marcador si no existe
-      this.currentMarker = await this.map.addMarker({
-        coordinate: { lat, lng },
-        title: 'Mi ubicación actual',
-      });
-      console.log('Marcador creado:', this.currentMarker); // Depuración: Ver el marcador creado
-
-      // Verifica si el marcador se creó correctamente
-      if (!this.currentMarker || typeof this.currentMarker.setPosition !== 'function') {
-        console.error('Error: el marcador no se creó correctamente.');
-      }
-    } catch (error) {
-      console.error('Error al crear el marcador:', error);
-    }
-  }
-}
-  // Obtiene la lista de servicios desde Firestore
   async getServices() {
+    console.log('Obteniendo servicios...');
     const servicesRef = collection(this.firestore, 'Servicios');
     const querySnapshot = await getDocs(servicesRef);
     this.services = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('Servicios obtenidos:', this.services);
   }
 
-  // Obtiene las rutas de un servicio seleccionado
   async getRutas(serviceId: string) {
+    console.log(`Obteniendo rutas para el ID del servicio: ${serviceId}`);
     const rutasRef = collection(this.firestore, `Servicios/${serviceId}/rutas`);
     const querySnapshot = await getDocs(rutasRef);
     this.rutas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('Rutas obtenidas:', this.rutas);
   }
 
-  // Obtiene los paraderos de una ruta seleccionada
   async getParaderos(rutaId: string) {
+    console.log(`Obteniendo paraderos para la ruta ID: ${rutaId}`);
     const paraderosRef = collection(this.firestore, `Servicios/${this.selectedService}/rutas/${rutaId}/paraderos`);
     const querySnapshot = await getDocs(paraderosRef);
     const paraderos = querySnapshot.docs.map(doc => doc.data());
-  
-    // Limpia los marcadores existentes
+    console.log('Paraderos obtenidos:', paraderos);
+
+    // Limpiar los marcadores de los paraderos anteriores
     for (const marker of this.paraderoMarkers) {
-      marker.remove();
+      marker.setMap(null);
     }
     this.paraderoMarkers = [];
-  
-    // Agrega nuevos marcadores
+
+    // Agregar nuevos marcadores
     for (const paradero of paraderos) {
-      const marker = await this.map.addMarker({
-        coordinate: { lat: paradero['lat'], lng: paradero['lng'] },
+      const marker = new google.maps.Marker({
+        position: { lat: paradero['lat'], lng: paradero['lng'] },
+        map: this.googleMapInstance,
         title: paradero['nombre'] || 'Paradero',
-        iconUrl: 'assets/icon/bus-stop.png',
+        icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
       });
-      this.paraderoMarkers.push(marker);
+      this.paraderoMarkers.push(marker); // Almacenar el marcador del paradero
+
+      // Añadir listener para mostrar el nombre del paradero
+      marker.addListener('click', () => {
+        const infoWindow = new google.maps.InfoWindow({
+          content: paradero['nombre'] || 'Paradero',
+        });
+        infoWindow.open(this.googleMapInstance, marker);
+      });
     }
   }
 
-  // Maneja el cambio de servicio
   onServiceChange(serviceId: string) {
+    console.log(`Servicio seleccionado: ${serviceId}`);
     this.selectedService = serviceId;
     this.getRutas(serviceId);
   }
 
-  // Maneja el cambio de ruta
   onRutaChange(rutaId: string) {
+    console.log(`Ruta seleccionada: ${rutaId}`);
     this.selectedRuta = rutaId;
     this.getParaderos(rutaId);
   }
 
-  // Limpia el intervalo cuando el componente se destruye
+  async UbicacionActual() {
+    const coordinates = await Geolocation.getCurrentPosition();
+    this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
+    console.log(`Actualizando posición: ${this.currentPosition}`); // Añadir console.log para verificar la actualización
+    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
+    this.googleMapInstance.setZoom(15);
+
+    if (this.currentMarker) {
+      this.currentMarker.setMap(null);
+    }
+
+    this.currentMarker = new google.maps.Marker({
+      position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
+      map: this.googleMapInstance,
+      title: 'Mi ubicación',
+      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+    });
+  }
+
+  startPositionUpdates() {
+    this.positionInterval = setInterval(() => {
+      this.UbicacionActual();
+    }, 3000); // Actualizar cada 3 segundos
+  }
+
   ngOnDestroy() {
     if (this.positionInterval) {
       clearInterval(this.positionInterval);
@@ -193,6 +219,3 @@ async updateMarker(lat: number, lng: number) {
     }
   }
 }
-
-
-
