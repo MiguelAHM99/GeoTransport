@@ -18,6 +18,7 @@
         <p><strong>Conductor:</strong> {{ item.conductor }}</p>
         <p><strong>Vehículo:</strong> {{ item.nombreVehiculo }}</p>
         <p><strong>Patente:</strong> {{ item.patente }}</p>
+        <p><strong>Hora:</strong> {{ item.timestamp?.toDate() | date: 'HH:mm:ss' }}</p>
       </ion-card-content>
     </ion-card>
   </div>
