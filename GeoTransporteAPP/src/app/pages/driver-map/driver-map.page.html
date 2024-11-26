@@ -32,11 +32,9 @@
     <ion-button *ngIf="recorridoIniciado" class="styled-button" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Finalizar recorrido
     </ion-button>
-    <ion-button class="styled-button" (click)="refrescarDatos()">
-      Refrescar Datos
-    </ion-button>
   </div>
   <div class="map-wrapper">
     <div #map id="my-map" style="height: 100%; width: 100%;"></div>
   </div>
 </ion-content>
+

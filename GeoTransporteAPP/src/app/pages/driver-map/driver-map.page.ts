@@ -426,11 +426,6 @@ export class DriverMapPage implements OnInit, OnDestroy {
     await this.getVehiculos();
   }
 
-  // Método para refrescar datos
-  async refrescarDatos() {
-    await this.loadData();
-  }
-
   // Método para cerrar sesión
   logout() {
     this.authService.logout();
