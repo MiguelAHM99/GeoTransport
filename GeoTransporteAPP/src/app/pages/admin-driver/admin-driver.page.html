@@ -13,7 +13,7 @@
     <ion-card class="card-container" *ngFor="let conductor of conductores">
       <ion-item>
         <ion-label>
-          Correo: {{conductor.correo}} <br>
+          Usuario: {{conductor.correo}} <br>
           Contraseña: <span *ngIf="showPassword[conductor.id]; else hiddenPassword">{{conductor.contrasenna}}</span>
           <ng-template #hiddenPassword>********</ng-template>
         </ion-label>
