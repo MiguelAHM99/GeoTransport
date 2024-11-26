@@ -6,47 +6,39 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-<div class="card-container">
-  <ion-card>
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input [(ngModel)]="newRuta.nombre" required></ion-input>
-    </ion-item>
-    <ion-item>
-      <ion-label position="floating">Descripción</ion-label>
-      <ion-input [(ngModel)]="newRuta.descripcion" required></ion-input>
-    </ion-item>
-    <ion-item>
-      <ion-label position="floating">Inicio</ion-label>
-      <ion-input [(ngModel)]="newRuta.inicio" required></ion-input>
-    </ion-item>
-    <ion-item>
-      <ion-label position="floating">Destino</ion-label>
-      <ion-input [(ngModel)]="newRuta.destino" required></ion-input>
-    </ion-item>
-  </ion-card>
-</div>
+<ion-content [fullscreen]="true" id="main-content">
+  <div class="card-container-edit">
+    <ion-card>
+      <ion-item>
+        <ion-label position="floating">Inicio</ion-label>
+        <ion-input [(ngModel)]="newRuta.inicio" required></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Destino</ion-label>
+        <ion-input [(ngModel)]="newRuta.destino" required></ion-input>
+      </ion-item>
+    </ion-card>
+  </div>
 
   <div #map id="map" style="height: 400px; margin-left: 15%; width: 70%;"></div>
 
-<div class="card-container-edit">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Paraderos Seleccionados</ion-card-title>
-    </ion-card-header>
-    <ion-list>
-      <ion-item *ngFor="let paradero of paraderos; let i = index">
-        <ion-input [(ngModel)]="paradero.nombre" placeholder="Nombre del paradero"></ion-input>
-        <ion-button color="danger" (click)="removeParadero(i)">Quitar</ion-button>
-      </ion-item>
-    </ion-list>
-  </ion-card>
-</div>
+  <div class="card-container-edit">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Paraderos Seleccionados</ion-card-title>
+      </ion-card-header>
+      <ion-list style="max-height: 200px; overflow-y: auto;">
+        <ion-item *ngFor="let paradero of paraderos; let i = index">
+          <ion-input [(ngModel)]="paradero.nombre" placeholder="Nombre del paradero"></ion-input>
+          <ion-button color="danger" (click)="removeParadero(i)">Quitar</ion-button>
+        </ion-item>
+      </ion-list>
+    </ion-card>
+  </div>
 
-<div class="card-container">
-  <ion-button style="width: 70%;" (click)="save()">Guardar</ion-button>
-</div>
+  <div class="card-container">
+    <ion-button style="width: 70%;" (click)="save()">Guardar</ion-button>
+  </div>
 </ion-content>
 
 <ion-footer [translucent]="true">
