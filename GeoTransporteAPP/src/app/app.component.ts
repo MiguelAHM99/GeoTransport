@@ -36,7 +36,7 @@ export class AppComponent implements OnInit {
       this.authService.setSessionFromLocalStorage(); // Establecer que la sesión se cargó desde el localStorage
     } else {
       // Redirigir al usuario a la página de login si no está autenticado
-      this.router.navigate(['/login']);
+      this.router.navigate(['/inicio']);
     }
   }
 

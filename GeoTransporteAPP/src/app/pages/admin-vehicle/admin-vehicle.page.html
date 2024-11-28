@@ -10,11 +10,11 @@
   <div class="main-container-">
     <ion-button class="add-button styled-button" (click)="create()">Agregar Nuevo Vehículo</ion-button>
 
-    <ion-card class="card-container" *ngFor="let vehiculo of vehiculos">    
+    <ion-card class="card-containe" *ngFor="let vehiculo of vehiculos">    
       <ion-item >
         <ion-label>
-          Nombre: {{vehiculo.nombre}} <br>
-          Patente: {{vehiculo.patente}} 
+          <strong>Nombre:</strong> {{vehiculo.nombre}} <br>
+          <strong>Patente:</strong> {{vehiculo.patente}} 
         </ion-label>
         <ion-buttons>
           <ion-button (click)="edit(vehiculo)" color="warning">Editar</ion-button>

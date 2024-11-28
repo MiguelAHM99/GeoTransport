@@ -74,7 +74,7 @@ ion-list {
   }
 /* Botones estilizados */
 .styled-button {
-
+  max-width: 80%;
   width: 100%; /* Botones más amplios en pantallas pequeñas */
   --padding-start: 20px;
   --padding-end: 20px;
@@ -125,7 +125,7 @@ ion-list {
 
 
 ion-card {
-  width: 70%; /* Ancho fijo de las tarjetas */
+  width: 80%; /* Ancho fijo de las tarjetas */
   border-radius: 12px; /* Bordes redondeados */
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra de la tarjeta */
   background: rgba(255, 255, 255, 0.8); /* Fondo blanco semi-transparente */
@@ -134,6 +134,22 @@ ion-card {
 ion-card-header {
   background: transparent; /* Encabezado transparente */
   color: var(--ion-text-color); /* Color de texto */
+}
+
+// maps
+/* Contenedor del mapa */
+.map-wrapper {
+  padding: 0 8% 0 8%;
+  position: relative;
+  width: 100%;
+  height: 70vh; /* Define una altura específica */
+}
+
+.map-container {
+  border-radius: 28px;
+  width: 100%;
+  height: 100%;
+
 }
 
 /* Media Queries para Responsividad */
@@ -149,21 +165,24 @@ ion-card-header {
   }
 
   ion-card {
-    width: 100%; /* Tarjetas más estrechas en pantallas pequeñas */
+    width: 80%; /* Tarjetas más estrechas en pantallas pequeñas */
     
   }
 
 // maps
 /* Contenedor del mapa */
 .map-wrapper {
+  padding: 0 8% 0 8%;
   position: relative;
   width: 100%;
-  height: 500px; /* Define una altura específica */
+  height: 70vh; /* Define una altura específica */
 }
 
 .map-container {
+  border-radius: 28px;
   width: 100%;
   height: 100%;
+
 }
 
 

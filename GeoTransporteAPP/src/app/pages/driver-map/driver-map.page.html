@@ -9,15 +9,15 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <div class="padding">
-    <ion-item>
+  <div class="main-container">
+    <ion-item class="padding">
       <ion-label>Seleccionar Ruta</ion-label>
       <ion-select class="end" [(ngModel)]="selectedRuta" placeholder="Seleccionar Ruta" [disabled]="recorridoIniciado">
         <ion-select-option *ngFor="let ruta of rutas" [value]="ruta.id">{{ ruta.nombre }}</ion-select-option>
       </ion-select>
     </ion-item>
 
-    <ion-item>
+    <ion-item class="padding">
       <ion-label>Seleccionar Vehículo</ion-label>
       <ion-select [(ngModel)]="selectedVehiculo" placeholder="Seleccionar Vehículo" [disabled]="recorridoIniciado">
         <ion-select-option *ngFor="let vehiculo of vehiculos" [value]="vehiculo.id">
@@ -25,16 +25,16 @@
         </ion-select-option>
       </ion-select>
     </ion-item>
-
-    <ion-button *ngIf="!recorridoIniciado" class="styled-button" (click)="iniciarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+    <ion-button *ngIf="!recorridoIniciado" class="styled-button padding" (click)="iniciarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Iniciar recorrido
     </ion-button>
-    <ion-button *ngIf="recorridoIniciado" class="styled-button" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
+    <ion-button *ngIf="recorridoIniciado" class="styled-button padding" (click)="finalizarRecorrido()" [disabled]="!selectedRuta || !selectedVehiculo">
       Finalizar recorrido
     </ion-button>
-  </div>
   <div class="map-wrapper">
-    <div #map id="my-map" style="height: 100%; width: 100%;"></div>
+    <div #map class="map-container" ></div>
   </div>
+  </div>
+
 </ion-content>
 

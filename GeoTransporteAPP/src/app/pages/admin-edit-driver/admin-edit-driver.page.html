@@ -40,10 +40,8 @@
         </ion-select>
       </ion-item>
     </ion-card>
-  </div>
 
-  <div >
-    <ion-button (click)="save()" expand="block" shape="round" [disabled]="!isFormValid() || cargando">
+    <ion-button (click)="save()" class="styled-button padding" shape="round" [disabled]="!isFormValid() || cargando">
       Guardar
     </ion-button>
   </div>

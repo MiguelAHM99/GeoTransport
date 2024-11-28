@@ -32,10 +32,8 @@
       La patente debe tener el formato XX-XX-XX.
     </ion-text>
   </ion-card>
-</div>
 
-<div class="card-container">
-  <ion-button (click)="save()" style="width: 70%;" shape="round" [disabled]="!isFormValid() || cargando">
+  <ion-button (click)="save()" class="styled-button padding"shape="round" [disabled]="!isFormValid() || cargando">
     Guardar
   </ion-button>
 </div>

@@ -7,7 +7,7 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" id="main-content">
-  <div class="card-container-edit">
+  <div class="card-container">
     <ion-card>
       <ion-item>
         <ion-label position="floating">Inicio</ion-label>
@@ -21,25 +21,23 @@
   </div>
 
   <div class="map-wrapper">
-    <div #map id="my-map" style="height: 100%; width: 100%;"></div>
+    <div #map class="map-container" style="height: 100%; width: 100%;"></div>
   </div>
 
-  <div class="card-container-edit">
+  <div class="card-container">
     <ion-card>
       <ion-card-header>
         <ion-card-title>Paraderos Seleccionados</ion-card-title>
       </ion-card-header>
-      <ion-list style="max-height: 200px; overflow-y: auto;">
+      <ion-list >
         <ion-item *ngFor="let paradero of paraderos; let i = index">
           <ion-input [(ngModel)]="paradero.nombre" placeholder="Nombre del paradero"></ion-input>
           <ion-button color="danger" (click)="removeParadero(i)">Quitar</ion-button>
         </ion-item>
       </ion-list>
     </ion-card>
-  </div>
 
-  <div class="card-container">
-    <ion-button style="width: 70%;" (click)="save()">Guardar</ion-button>
+    <ion-button class="styled-button padding"s (click)="save()">Guardar</ion-button>
   </div>
 </ion-content>
 

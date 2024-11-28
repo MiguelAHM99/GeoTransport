@@ -6,7 +6,7 @@
           <ion-title>GeoTransporte</ion-title>
         </ion-toolbar>
       </ion-header>
-      <ion-content>
+      <ion-content class="main-container-">
         <ion-list>
           <ion-item routerLink="/admin-driver" (click)="closeMenu()">
             <ion-label>Conductores</ion-label>
@@ -21,7 +21,7 @@
             <ion-label>Historial</ion-label>
           </ion-item>
         </ion-list>
-        <ion-button class="styled-button" routerLink="/inicio" style="margin-top: 20px;" (click)="logoutAndGoHome()">
+        <ion-button class="styled-button" routerLink="/inicio"  (click)="logoutAndGoHome()">
           <ion-icon slot="start" name="arrow-back"></ion-icon>
           Volver a Inicio
         </ion-button>

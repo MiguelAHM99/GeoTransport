@@ -13,10 +13,10 @@
     <ion-card class="card-container" *ngFor="let ruta of rutas">
       <ion-item>
         <ion-label>
-          Nombre: {{ruta.nombre}} <br>
-          Descripción: {{ruta.descripcion}} <br>
-          Inicio: {{ruta.inicio}} <br>
-          Destino: {{ruta.destino}}
+          <strong>Nombre:</strong> {{ruta.nombre}} <br>
+          <strong>Descripción:</strong> {{ruta.descripcion}} <br>
+          <strong>Inicio:</strong> {{ruta.inicio}} <br>
+          <strong>Destino:</strong> {{ruta.destino}}
         </ion-label>
         <ion-buttons slot="end">
           <ion-button (click)="edit(ruta)" color="warning">Editar</ion-button>
