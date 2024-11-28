@@ -3,11 +3,12 @@
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
+    <ion-title>Conductores</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" id="main-content">
-  <div class="main-container-">
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="card-container">
     <ion-button (click)="create()" class="styled-button">Agregar Nuevo Conductor</ion-button>
 
     <ion-card class="card-container" *ngFor="let conductor of conductores">
@@ -21,8 +22,12 @@
           <ion-button (click)="togglePasswordVisibility(conductor.id)">
             <ion-icon [name]="showPassword[conductor.id] ? 'eye-off' : 'eye'"></ion-icon>
           </ion-button>
-          <ion-button (click)="edit(conductor)" color="warning">Editar</ion-button>
-          <ion-button (click)="delete(conductor)" color="danger">Eliminar</ion-button>
+          <ion-button (click)="edit(conductor)" color="warning">
+            <ion-icon name="pencil"></ion-icon>
+          </ion-button>
+          <ion-button (click)="delete(conductor)" color="danger">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-item>
     </ion-card>

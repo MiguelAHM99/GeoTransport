@@ -3,22 +3,27 @@
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
+    <ion-title>Vehículos</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" >
+<ion-content [fullscreen]="true">
   <div class="main-container-">
     <ion-button class="add-button styled-button" (click)="create()">Agregar Nuevo Vehículo</ion-button>
 
     <ion-card class="card-containe" *ngFor="let vehiculo of vehiculos">    
-      <ion-item >
+      <ion-item>
         <ion-label>
           <strong>Nombre:</strong> {{vehiculo.nombre}} <br>
           <strong>Patente:</strong> {{vehiculo.patente}} 
         </ion-label>
-        <ion-buttons>
-          <ion-button (click)="edit(vehiculo)" color="warning">Editar</ion-button>
-          <ion-button (click)="delete(vehiculo)" color="danger">Eliminar</ion-button>
+        <ion-buttons slot="end">
+          <ion-button (click)="edit(vehiculo)" color="warning">
+            <ion-icon name="pencil"></ion-icon>
+          </ion-button>
+          <ion-button (click)="delete(vehiculo)" color="danger">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-item>
     </ion-card>
@@ -33,6 +38,7 @@
 <ion-footer [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
+      <!-- Puedes añadir botones aquí si es necesario -->
     </ion-buttons>
   </ion-toolbar>
 </ion-footer>

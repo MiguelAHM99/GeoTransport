@@ -206,7 +206,7 @@ export class UserMapPage implements OnInit, OnDestroy {
         // Añadir listener para mostrar el nombre del vehículo
         marker.addListener('click', () => {
           const infoWindow = new google.maps.InfoWindow({
-            content: `Nombre del vehículo: ${ubicacion['nombreVehiculo']}`,
+            content: `Vehículo: ${ubicacion['nombreVehiculo']}`,
           });
           infoWindow.open(this.googleMapInstance, marker);
         });
@@ -253,7 +253,7 @@ export class UserMapPage implements OnInit, OnDestroy {
   startPositionUpdates() {
     this.positionInterval = setInterval(() => {
       this.UbicacionActual();
-    }, 3000); // Actualizar cada 3 segundos
+    }, 5000); // Actualizar cada 3 segundos
   }
 
   ngOnDestroy() {

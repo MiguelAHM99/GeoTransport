@@ -1,8 +1,9 @@
-<ion-header>
+<ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
+    <ion-title>Rutas</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -19,8 +20,12 @@
           <strong>Destino:</strong> {{ruta.destino}}
         </ion-label>
         <ion-buttons slot="end">
-          <ion-button (click)="edit(ruta)" color="warning">Editar</ion-button>
-          <ion-button (click)="delete(ruta)" color="danger">Eliminar</ion-button>
+          <ion-button (click)="edit(ruta)" color="warning">
+            <ion-icon name="pencil"></ion-icon>
+          </ion-button>
+          <ion-button (click)="delete(ruta)" color="danger">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
         </ion-buttons>
       </ion-item>
     </ion-card>
@@ -35,6 +40,7 @@
 <ion-footer [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
+      <!-- Puedes añadir botones aquí si es necesario -->
     </ion-buttons>
   </ion-toolbar>
 </ion-footer>

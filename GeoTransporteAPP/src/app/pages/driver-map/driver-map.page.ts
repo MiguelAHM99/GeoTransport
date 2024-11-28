@@ -313,7 +313,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
   startPositionUpdates() {
     this.positionInterval = setInterval(() => {
       this.UbicacionActual();
-    }, 3000); // Actualizar cada 3 segundos
+    }, 5000); // Actualizar cada 3 segundos
   }
 
   stopPositionUpdates() {
