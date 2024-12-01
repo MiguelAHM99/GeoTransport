@@ -253,7 +253,7 @@ export class UserMapPage implements OnInit, OnDestroy {
   startPositionUpdates() {
     this.positionInterval = setInterval(() => {
       this.UbicacionActual();
-    }, 5000); // Actualizar cada 3 segundos
+    }, 20000); // Actualizar cada 3 segundos
   }
 
   ngOnDestroy() {
