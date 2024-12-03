@@ -100,16 +100,14 @@ export class DriverMapPage implements OnInit, OnDestroy {
     this.selectedRuta = state.selectedRuta || '';
   }
 
-  loadGoogleMaps(): Promise<void> {
+  async loadGoogleMaps(): Promise<void> {
     return new Promise((resolve) => {
       if (typeof google !== 'undefined' && google.maps) {
         resolve();
       } else {
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.mapsKey}`;
-        script.onload = () => {
-          resolve();
-        };
+        script.onload = () => resolve();
         document.head.appendChild(script);
       }
     });
@@ -172,19 +170,15 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
     // Obtener la ubicación actual del usuario
     const coordinates = await Geolocation.getCurrentPosition();
-    this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
-    this.googleMapInstance.setCenter({ lat: coordinates.coords.latitude, lng: coordinates.coords.longitude });
+    const { latitude, longitude } = coordinates.coords;
+    this.googleMapInstance.setCenter({ lat: latitude, lng: longitude });
     this.googleMapInstance.setZoom(15);
 
-    if (this.currentMarker) {
-      this.currentMarker.setMap(null);
-    }
-
     this.currentMarker = new google.maps.Marker({
-      position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
+      position: { lat: latitude, lng: longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
-      icon: 'assets/icon/car.png', // URL del icono azul para la ubicación del usuario
+      icon: 'assets/icon/car.png',
     });
   }
 
@@ -310,115 +304,85 @@ export class DriverMapPage implements OnInit, OnDestroy {
     }
   }
 
-  startPositionUpdates() {
-    this.positionInterval = setInterval(() => {
-      this.UbicacionActual();
-    }, 5000); // Actualizar cada 3 segundos
+  async startPositionUpdates() {
+    if (this.watchId) {
+      console.warn('La supervisión de posición ya está activa.');
+      return;
+    }
+
+    this.watchId = await Geolocation.watchPosition({}, async (position, err) => {
+      if (err) {
+        console.error('Error al obtener la posición:', err);
+        return;
+      }
+
+      if (position) {
+        const { latitude, longitude } = position.coords;
+        this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
+        console.log(`Posición actualizada: ${this.currentPosition}`);
+
+        this.googleMapInstance.setCenter({ lat: latitude, lng: longitude });
+        if (this.currentMarker) {
+          this.currentMarker.setPosition({ lat: latitude, lng: longitude });
+        }
+
+        if (this.ubicacionDocRef) {
+          await setDoc(this.ubicacionDocRef, {
+            lat: latitude,
+            lng: longitude,
+            nombreVehiculo: this.vehiculos.find(v => v.id === this.selectedVehiculo)?.nombre,
+            timestamp: new Date(),
+            recorridoId: this.recorridoId,
+          });
+        }
+      }
+    });
   }
 
   stopPositionUpdates() {
-    if (this.positionInterval) {
-      clearInterval(this.positionInterval);
-      this.positionInterval = null;
+    if (this.watchId) {
+      Geolocation.clearWatch({ id: this.watchId });
+      console.log('Supervisión de posición detenida.');
+      this.watchId = null;
+    } else {
+      console.warn('No hay supervisión activa para detener.');
     }
   }
 
   async iniciarRecorrido() {
-    this.recorridoIniciado = true;
-
-    // Obtener detalles de la ruta seleccionada
-    const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
-    const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
-    
+    const rutaSeleccionada = this.rutas.find(r => r.id === this.selectedRuta);
+    const vehiculoSeleccionado = this.vehiculos.find(v => v.id === this.selectedVehiculo);
 
     if (rutaSeleccionada && vehiculoSeleccionado) {
-      try {
-        // Eliminar la colección de ubicaciones existente
-        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
-        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
-        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
-        await Promise.all(deletePromises);
+      this.recorridoIniciado = true;
+      this.recorridoId = rutaSeleccionada.id;
 
-        // Asignar el ID de la ruta seleccionada al recorridoId
-        this.recorridoId = rutaSeleccionada.id;
+      this.ubicacionDocRef = doc(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion/ubicacion-actual`);
+      const coordinates = await Geolocation.getCurrentPosition();
+      const { latitude, longitude } = coordinates.coords;
 
-        // Crear el primer documento de ubicación y almacenar su referencia
-        this.ubicacionDocRef = doc(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion/ubicacion-actual`);
-        const coordinates = await Geolocation.getCurrentPosition();
-        await setDoc(this.ubicacionDocRef, {
-          lat: coordinates.coords.latitude,
-          lng: coordinates.coords.longitude,
-          timestamp: new Date(),
-          nombreVehiculo: this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo)?.nombre,
-          recorridoId: this.recorridoId // Añadir el ID del recorrido
-        });
+      await setDoc(this.ubicacionDocRef, {
+        lat: latitude,
+        lng: longitude,
+        nombreVehiculo: vehiculoSeleccionado.nombre,
+        timestamp: new Date(),
+        recorridoId: this.recorridoId,
+      });
 
-        // Generar ID personalizado para el historial
-        const timestamp = new Date();
-        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
-
-        // Guardar en la colección historial
-        const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
-        await setDoc(historialRef, {
-          conductor: this.conductorCorreo,
-          patente: vehiculoSeleccionado.patente,
-          nombreVehiculo: vehiculoSeleccionado.nombre,
-          nombreRuta: rutaSeleccionada.nombre,
-          estado: 'Inicio de ruta',
-          timestamp: timestamp
-        });
-        console.log('Historial guardado correctamente');
-
-        // Iniciar la actualización de la posición
-        this.startPositionUpdates();
-      } catch (error) {
-        console.error('Error guardando en el historial:', error);
-      }
-    } else {
-      console.error('Ruta o vehículo no seleccionados correctamente');
+      this.startPositionUpdates();
     }
   }
 
   async finalizarRecorrido() {
     this.recorridoIniciado = false;
+    this.stopPositionUpdates();
 
-    // Obtener detalles de la ruta seleccionada
-    const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
-    const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
-
-    if (rutaSeleccionada && vehiculoSeleccionado) {
-      try {
-        // Generar ID personalizado para el historial
-        const timestamp = new Date();
-        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Fin-${this.conductorCorreo}`;
-
-        // Guardar en la colección historial
-        const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
-        await setDoc(historialRef, {
-          conductor: this.conductorCorreo,
-          patente: vehiculoSeleccionado.patente,
-          nombreVehiculo: vehiculoSeleccionado.nombre,
-          nombreRuta: rutaSeleccionada.nombre,
-          estado: 'Fin de ruta',
-          timestamp: timestamp
-        });
-        console.log('Historial guardado correctamente');
-
-        // Detener la actualización de la posición
-        this.stopPositionUpdates();
-
-        // Eliminar la colección de ubicaciones
-        const ubicacionesRef = collection(this.firestore, `Servicios/${this.serviceId}/usuarios/${this.conductorId}/ubicacion`);
-        const ubicacionesSnapshot = await getDocs(ubicacionesRef);
-        const deletePromises = ubicacionesSnapshot.docs.map(doc => deleteDoc(doc.ref));
-        await Promise.all(deletePromises);
-      } catch (error) {
-        console.error('Error guardando en el historial:', error);
-      }
-    } else {
-      console.error('Ruta o vehículo no seleccionados correctamente');
+    if (this.ubicacionDocRef) {
+      await deleteDoc(this.ubicacionDocRef);
+      console.log('Datos de la ubicación eliminados.');
     }
   }
+
 
   // Método para cargar datos necesarios
   async loadData() {

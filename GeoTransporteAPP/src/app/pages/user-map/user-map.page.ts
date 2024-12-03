@@ -13,22 +13,21 @@ export class UserMapPage implements OnInit, OnDestroy {
 
   @ViewChild('map') mapRef: ElementRef;
   map: GoogleMap;
-  googleMapInstance: google.maps.Map; // Añadir una instancia de google.maps.Map
+  googleMapInstance: google.maps.Map; // Instancia de google.maps.Map
 
   currentPosition: string = 'Esperando posición...';
   currentMarker: google.maps.Marker | null = null;
-  watchId: string | null = null; // Almacena el ID del watcher para detenerlo cuando sea necesario
+  watchId: string | null = null; // Almacenar el ID del watcher
   services: any[] = [];
   selectedService: string = '';
   rutas: any[] = [];
   selectedRuta: string = '';
-  paraderoMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los paraderos
-  conductorMarkers: google.maps.Marker[] = []; // Array para almacenar los marcadores de los conductores
-  positionInterval: any; // Variable para almacenar el intervalo
+  paraderoMarkers: google.maps.Marker[] = [];
+  conductorMarkers: google.maps.Marker[] = [];
 
   constructor(private readonly firestore: Firestore) { }
 
-  ionViewDidEnter(){
+  ionViewDidEnter() {
     this.loadGoogleMaps().then(() => {
       this.createMap();
       this.startPositionUpdates(); // Iniciar la actualización de la posición
@@ -56,6 +55,7 @@ export class UserMapPage implements OnInit, OnDestroy {
 
   async createMap() {
     const mapStyles = [
+      // Estilo personalizado para el mapa (puedes modificarlo según tu preferencia)
       {
         featureType: 'poi',
         elementType: 'all',
@@ -123,7 +123,7 @@ export class UserMapPage implements OnInit, OnDestroy {
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
-      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+      icon: 'assets/icon/man.png', // Icono para la ubicación del usuario
     });
   }
 
@@ -162,9 +162,9 @@ export class UserMapPage implements OnInit, OnDestroy {
         position: { lat: paradero['lat'], lng: paradero['lng'] },
         map: this.googleMapInstance,
         title: paradero['nombre'] || 'Paradero',
-        icon: 'assets/icon/bus-stop.png', // URL del icono de parada para los paraderos
+        icon: 'assets/icon/bus-stop.png', // Icono para los paraderos
       });
-      this.paraderoMarkers.push(marker); // Almacenar el marcador del paradero
+      this.paraderoMarkers.push(marker);
 
       // Añadir listener para mostrar el nombre del paradero
       marker.addListener('click', () => {
@@ -200,7 +200,7 @@ export class UserMapPage implements OnInit, OnDestroy {
           position: { lat: ubicacion['lat'], lng: ubicacion['lng'] },
           map: this.googleMapInstance,
           title: 'Conductor',
-          icon: 'assets/icon/car.png', // URL del icono del conductor
+          icon: 'assets/icon/car.png', // Icono para los conductores
         });
 
         // Añadir listener para mostrar el nombre del vehículo
@@ -211,7 +211,7 @@ export class UserMapPage implements OnInit, OnDestroy {
           infoWindow.open(this.googleMapInstance, marker);
         });
 
-        this.conductorMarkers.push(marker); // Almacenar el marcador del conductor
+        this.conductorMarkers.push(marker);
       }
     }
   }
@@ -231,7 +231,7 @@ export class UserMapPage implements OnInit, OnDestroy {
   async UbicacionActual() {
     const coordinates = await Geolocation.getCurrentPosition();
     this.currentPosition = `Lat: ${coordinates.coords.latitude}, Lon: ${coordinates.coords.longitude}`;
-    console.log(`Actualizando posición: ${this.currentPosition}`); // Añadir console.log para verificar la actualización
+    console.log(`Actualizando posición: ${this.currentPosition}`);
 
     if (this.currentMarker) {
       this.currentMarker.setMap(null);
@@ -241,25 +241,50 @@ export class UserMapPage implements OnInit, OnDestroy {
       position: { lat: coordinates.coords.latitude, lng: coordinates.coords.longitude },
       map: this.googleMapInstance,
       title: 'Mi ubicación',
-      icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+      icon: 'assets/icon/man.png',
     });
 
     // Actualizar la ubicación de los conductores
     if (this.selectedRuta) {
-      await this.getConductoresUbicacion(this.selectedRuta);
+      this.getConductoresUbicacion(this.selectedRuta);
     }
   }
 
-  startPositionUpdates() {
-    this.positionInterval = setInterval(() => {
-      this.UbicacionActual();
-    }, 5000); // Actualizar cada 3 segundos
+  async startPositionUpdates() {
+    const watch = await Geolocation.watchPosition({}, (position, err) => {
+      if (err) {
+        console.log("Error en la geolocalización: ", err);
+        return;
+      }
+
+      this.currentPosition = `Lat: ${position.coords.latitude}, Lon: ${position.coords.longitude}`;
+      console.log("Posición actualizada: ", this.currentPosition);
+
+      if (this.currentMarker) {
+        this.currentMarker.setMap(null);
+      }
+
+      this.currentMarker = new google.maps.Marker({
+        position: { lat: position.coords.latitude, lng: position.coords.longitude },
+        map: this.googleMapInstance,
+        title: 'Mi ubicación',
+        icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+      });
+
+      // Actualizar la ubicación de los conductores si una ruta está seleccionada
+      if (this.selectedRuta) {
+        this.getConductoresUbicacion(this.selectedRuta);
+      }
+    });
+
+    // Guardar el ID del watcher para detenerlo después si es necesario
+    this.watchId = watch;
   }
 
   ngOnDestroy() {
-    if (this.positionInterval) {
-      clearInterval(this.positionInterval);
-      this.positionInterval = null;
+    if (this.watchId) {
+      Geolocation.clearWatch({ id: this.watchId });
+      this.watchId = null;
     }
   }
 }

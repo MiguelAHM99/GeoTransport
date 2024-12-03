@@ -17,6 +17,8 @@
       </ion-select>
     </ion-item>
 
+    <p><strong>Tus Coordenadas son :</strong><br>{{ currentPosition }}</p>
+
     <ion-item class="padding">
       <ion-label>Seleccionar Vehículo</ion-label>
       <ion-select [(ngModel)]="selectedVehiculo" placeholder="Seleccionar Vehículo" [disabled]="recorridoIniciado">
