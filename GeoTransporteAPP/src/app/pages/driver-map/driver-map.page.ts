@@ -309,23 +309,39 @@ export class DriverMapPage implements OnInit, OnDestroy {
       console.warn('La supervisión de posición ya está activa.');
       return;
     }
-
+  
+    const updateInterval = 5000; // Intervalo en milisegundos (5 segundos)
+    let lastUpdateTime = 0; // Tiempo del último update en milisegundos
+  
     this.watchId = await Geolocation.watchPosition({}, async (position, err) => {
       if (err) {
         console.error('Error al obtener la posición:', err);
         return;
       }
-
+  
       if (position) {
+        const currentTime = Date.now(); // Tiempo actual en milisegundos
+        if (currentTime - lastUpdateTime < updateInterval) {
+          // Si no ha pasado suficiente tiempo desde la última actualización, no hacemos nada
+          return;
+        }
+  
+        // Actualizamos el tiempo del último update
+        lastUpdateTime = currentTime;
+  
         const { latitude, longitude } = position.coords;
         this.currentPosition = `Lat: ${latitude}, Lon: ${longitude}`;
         console.log(`Posición actualizada: ${this.currentPosition}`);
-
+  
+        // Actualizar el centro del mapa
         this.googleMapInstance.setCenter({ lat: latitude, lng: longitude });
+  
+        // Mover el marcador actual
         if (this.currentMarker) {
           this.currentMarker.setPosition({ lat: latitude, lng: longitude });
         }
-
+  
+        // Guardar la ubicación en Firestore
         if (this.ubicacionDocRef) {
           await setDoc(this.ubicacionDocRef, {
             lat: latitude,
@@ -337,8 +353,10 @@ export class DriverMapPage implements OnInit, OnDestroy {
         }
       }
     });
+  
+    console.log('Watcher iniciado con ID:', this.watchId);
   }
-
+  
   stopPositionUpdates() {
     if (this.watchId) {
       Geolocation.clearWatch({ id: this.watchId });

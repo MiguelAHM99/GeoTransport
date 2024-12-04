@@ -34,6 +34,10 @@ export class UserMapPage implements OnInit, OnDestroy {
     });
   }
 
+  ngOnDestroy(): void {
+    
+  }
+
   async ngOnInit() {
     await this.getServices();
   }
@@ -251,40 +255,42 @@ export class UserMapPage implements OnInit, OnDestroy {
   }
 
   async startPositionUpdates() {
-    const watch = await Geolocation.watchPosition({}, (position, err) => {
+    const updateInterval = 5000; // Intervalo en milisegundos (5 segundos)
+    let lastUpdateTime = 0; // Tiempo del último update en milisegundos
+  
+    this.watchId = await Geolocation.watchPosition({}, (position, err) => {
       if (err) {
-        console.log("Error en la geolocalización: ", err);
+        console.error("Error en la geolocalización: ", err);
         return;
       }
-
+  
+      const currentTime = Date.now(); // Tiempo actual en milisegundos
+      if (currentTime - lastUpdateTime < updateInterval) {
+        // Si no ha pasado suficiente tiempo desde la última actualización, no hacemos nada
+        return;
+      }
+  
+      // Actualizamos el tiempo del último update
+      lastUpdateTime = currentTime;
+  
       this.currentPosition = `Lat: ${position.coords.latitude}, Lon: ${position.coords.longitude}`;
       console.log("Posición actualizada: ", this.currentPosition);
-
+  
       if (this.currentMarker) {
         this.currentMarker.setMap(null);
       }
-
+  
       this.currentMarker = new google.maps.Marker({
         position: { lat: position.coords.latitude, lng: position.coords.longitude },
         map: this.googleMapInstance,
         title: 'Mi ubicación',
-        icon: 'assets/icon/man.png', // URL del icono azul para la ubicación del usuario
+        icon: 'assets/icon/man.png', // Icono para la ubicación del usuario
       });
-
+  
       // Actualizar la ubicación de los conductores si una ruta está seleccionada
       if (this.selectedRuta) {
         this.getConductoresUbicacion(this.selectedRuta);
       }
     });
-
-    // Guardar el ID del watcher para detenerlo después si es necesario
-    this.watchId = watch;
-  }
-
-  ngOnDestroy() {
-    if (this.watchId) {
-      Geolocation.clearWatch({ id: this.watchId });
-      this.watchId = null;
-    }
   }
 }
