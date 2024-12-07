@@ -368,6 +368,7 @@ export class DriverMapPage implements OnInit, OnDestroy {
   }
 
   async iniciarRecorrido() {
+          // Obtener detalles de la ruta seleccionada
     const rutaSeleccionada = this.rutas.find(r => r.id === this.selectedRuta);
     const vehiculoSeleccionado = this.vehiculos.find(v => v.id === this.selectedVehiculo);
 
@@ -389,6 +390,31 @@ export class DriverMapPage implements OnInit, OnDestroy {
 
       this.startPositionUpdates();
     }
+
+    
+        if (rutaSeleccionada && vehiculoSeleccionado) {
+          try {
+            // Generar ID personalizado
+            const timestamp = new Date();
+            const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Inicio-${this.conductorCorreo}`;
+    
+            // Guardar en la colección historial
+            const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
+            await setDoc(historialRef, {
+              conductor: this.conductorCorreo,
+              patente: vehiculoSeleccionado.patente,
+              nombreVehiculo: vehiculoSeleccionado.nombre,
+              nombreRuta: rutaSeleccionada.nombre,
+              estado: 'Inicio de ruta',
+              timestamp: timestamp
+            });
+            console.log('Historial guardado correctamente');
+          } catch (error) {
+            console.error('Error guardando en el historial:', error);
+          }
+        } else {
+          console.error('Ruta o vehículo no seleccionados correctamente');
+        }
   }
 
   async finalizarRecorrido() {
@@ -398,6 +424,33 @@ export class DriverMapPage implements OnInit, OnDestroy {
     if (this.ubicacionDocRef) {
       await deleteDoc(this.ubicacionDocRef);
       console.log('Datos de la ubicación eliminados.');
+    }
+      // Obtener detalles de la ruta seleccionada
+    const rutaSeleccionada = this.rutas.find(ruta => ruta.id === this.selectedRuta);
+    const vehiculoSeleccionado = this.vehiculos.find(vehiculo => vehiculo.id === this.selectedVehiculo);
+
+    if (rutaSeleccionada && vehiculoSeleccionado) {
+      try {
+        // Generar ID personalizado
+        const timestamp = new Date();
+        const idPersonalizado = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}-${timestamp.getHours().toString().padStart(2, '0')}-${timestamp.getMinutes().toString().padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}-Termino-${this.conductorCorreo}`;
+
+        // Guardar en la colección historial
+        const historialRef = doc(this.firestore, `Servicios/${this.serviceId}/historial/${idPersonalizado}`);
+        await setDoc(historialRef, {
+          conductor: this.conductorCorreo,
+          patente: vehiculoSeleccionado.patente,
+          nombreVehiculo: vehiculoSeleccionado.nombre,
+          nombreRuta: rutaSeleccionada.nombre,
+          estado: 'Ruta finalizada',
+          timestamp: timestamp
+        });
+        console.log('Historial guardado correctamente');
+      } catch (error) {
+        console.error('Error guardando en el historial:', error);
+      }
+    } else {
+      console.error('Ruta o vehículo no seleccionados correctamente');
     }
   }
 
