@@ -10,6 +10,14 @@
   <div class="card-container">
     <ion-card>
       <ion-item>
+        <ion-label position="floating">Nombre</ion-label>
+        <ion-input [(ngModel)]="newRuta.nombre" required></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Descripcion</ion-label>
+        <ion-input [(ngModel)]="newRuta.descripcion" required></ion-input>
+      </ion-item>
+      <ion-item>
         <ion-label position="floating">Inicio</ion-label>
         <ion-input [(ngModel)]="newRuta.inicio" required></ion-input>
       </ion-item>
